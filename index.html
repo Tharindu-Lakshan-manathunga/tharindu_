@@ -14,16 +14,104 @@
   <!-- External CSS -->
   <link rel="stylesheet" href="style.css" />
   
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+  <!-- Google Fonts - Poppins is versatile for this theme -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   
-  <!-- You can add favicon or other head elements here -->
+  <!-- Typed.js for typing effect -->
+  <script src="https://unpkg.com/typed.js@2.1.0/dist/typed.umd.js"></script>
+
+  <!-- Firebase SDKs for Firestore (for page view counter) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Global Firebase instances
+    let app, db, auth;
+
+    // Initialize Firebase and increment page view count
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        // Use user's provided firebaseConfig directly if available, otherwise fallback.
+        // For Canvas environment, __firebase_config is usually injected.
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+          apiKey: "AIzaSyAXGyv_yx0_HzMvrHeP_wEMfgIA4xWZRtc",
+          authDomain: "aboutme-7847c.firebaseapp.com",
+          projectId: "aboutme-7847c",
+          storageBucket: "aboutme-7847c.firebasestorage.app",
+          messagingSenderId: "716099738411",
+          appId: "1:716099738411:web:35345db819b912c211836e",
+          measurementId: "G-SHFHC1QQ0R"
+        };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        if (Object.keys(firebaseConfig).length > 0) {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+
+            // Authenticate user (anonymously if no custom token)
+            const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+            if (initialAuthToken) {
+                await signInWithCustomToken(auth, initialAuthToken);
+                console.log("Firebase authenticated with custom token.");
+            } else {
+                await signInAnonymously(auth);
+                console.log("Firebase authenticated anonymously.");
+            }
+            
+            // Get user ID after authentication
+            const userId = auth.currentUser?.uid || crypto.randomUUID(); // Fallback to random UUID if no UID
+
+            // Display userId in the footer
+            const userIdDisplayElement = document.getElementById('user-id-display');
+            if (userIdDisplayElement) {
+                userIdDisplayElement.textContent = `User ID: ${userId}`;
+            }
+
+            // Reference to the page view counter document (public data)
+            // Stored in /artifacts/{appId}/public/data/{your_collection_name}/{documentId}
+            const pageViewsDocRef = doc(db, `artifacts/${appId}/public/data/website_analytics/page_views`);
+
+            // Increment the counter
+            await setDoc(pageViewsDocRef, { count: increment(1), lastViewedAt: new Date(), lastViewedBy: userId }, { merge: true });
+            
+            // Get the current count and log it (for user's private view in console)
+            const docSnap = await getDoc(pageViewsDocRef);
+            if (docSnap.exists()) {
+                console.log(`Current Website Views: ${docSnap.data().count}`);
+            } else {
+                console.log("Page views counter initialized.");
+            }
+
+        } else {
+            console.warn("Firebase configuration not found. Page view counter will not function.");
+        }
+      } catch (error) {
+        console.error("Error initializing Firebase or incrementing page view count:", error);
+      }
+    });
+  </script>
+
 </head>
-<body>
-  
+<body data-theme="dark">
+  <!-- Preloader -->
+  <div id="preloader">
+    <div class="loader"></div>
+  </div>
+
   <!-- Navbar Section -->
   <nav class="navbar">
     <div class="container">
+      <!-- Theme Toggle Button - Moved to Left -->
+      <button id="theme-toggle-btn" class="theme-toggle-btn" aria-label="Toggle dark and light theme">
+        <i class="fas fa-sun"></i> <!-- Sun icon for light mode -->
+        <i class="fas fa-moon"></i> <!-- Moon icon for dark mode -->
+      </button>
+
       <!-- Logo / Brand -->
       <div class="logo">Tharindu</div>
 
@@ -37,31 +125,41 @@
         <li><a href="#skills" class="nav-link">Skills</a></li>
         <li><a href="#cv" class="nav-link">CV</a></li>
         <li><a href="#testimonials" class="nav-link">Testimonials</a></li>
+        <li><a href="#gallery" class="nav-link">Gallery</a></li>
         <li><a href="#contact" class="nav-link">Contact</a></li>
-
       </ul>
     </div>
   </nav>
 
-  <!-- Hero Section - Intro & Typing Effect -->
+  <!-- Hero Section - Intro & Typing Effect with Background Video -->
   <section id="hero" class="hero-section">
+    <!-- Background Video -->
+    <video autoplay loop muted playsinline class="hero-background-video">
+      <source src="https://assets.coverr.co/videos/mp4/Abstract_Blue_Flares.mp4" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
     <div class="container hero-content">
-      <h1>Hello, I'm <span class="name">Tharindu Lakshan</span></h1>
-      <h2>
+      <h1 class="animate-hero-text">Hello, I'm <span class="name">Tharindu Lakshan</span></h1>
+      <h2 class="animate-hero-text">
         <!-- Typed Text Animation -->
         <span id="typed-text"></span><span class="cursor">|</span>
       </h2>
-      <p>System Support Engineer and Computer Systems & Network Engineering Undergraduate with strong skills in DevOps, Linux, Cloud Computing, CI/CD, and IT Infrastructure Automation.</p>
-      <a href="#contact" class="btn-primary">Connect with Me</a>
+      <p class="animate-hero-text">System Support Engineer and Computer Systems & Network Engineering Undergraduate with strong skills in DevOps, Linux, Cloud Computing, CI/CD, and IT Infrastructure Automation.</p>
+      <a href="#contact" class="btn-primary animate-hero-button">Connect with Me</a>
     </div>
   </section>
 
   <!-- About Me Section -->
-  <section id="about" class="about-section">
+  <section id="about" class="about-section reveal">
     <div class="container about-content">
-      <!-- Profile Image -->
-      <div class="about-image">
-        <img src="tharindu_db-updated.png" alt="Profile Picture" />
+      <!-- Profile Image - Dynamic layered glitch design with new shape -->
+      <div class="about-image-glitch-wrapper">
+        <div class="about-image-glitch-container">
+            <img src="tharindu_db-updated.png" alt="Tharindu Lakshan Profile Picture" class="profile-main-image" />
+            <div class="glitch-line line-1"></div>
+            <div class="glitch-line line-2"></div>
+            <div class="glitch-overlay"></div>
+        </div>
       </div>
       
       <!-- About Text and Skills -->
@@ -72,90 +170,103 @@
         
         <!-- Quick Skills List -->
         <ul>
-          <li>🔧 Hands-on with Linux, Docker, Jenkins, Kubernetes</li>
+          <li>🚀 Hands-on with Linux, Docker, Jenkins, Kubernetes</li>
           <li>☁️ Experience with AWS & Azure platforms</li>
           <li>📈 Monitoring via Grafana, Prometheus, Netdata</li>
-          <li>🧩 Passionate about learning, automation, and collaboration</li>
+          <li>💡 Passionate about learning, automation, and collaboration</li>
         </ul>
       </div>
     </div>
   </section>
 
   <!-- Projects Section -->
- <section id="projects" class="projects-section">
+ <section id="projects" class="projects-section reveal">
   <div class="container">
     <h2 class="section-title">Projects</h2>
 
-    <div class="achievements-grid">
+    <div class="cards-grid">
 
-      <div class="achievement-card">
+      <div class="card-item">
         <h3>NFV Demonstration with Socket Programming in C</h3>
         <p>Demonstrated Network Function Virtualization (NFV) using OpenStack and OpenDaylight. Built and simulated VNFs and SDN functions over Ubuntu Server using socket programming for dynamic network operations.</p>
-        <p><strong>Technologies:</strong> Ubuntu Server, OpenStack (NFVOs), OpenDaylight (SDN, VNFs), C</p>
-        <a href="https://example.com/nfv-project" target="_blank" rel="noopener noreferrer">Read more</a>
+        <p class="technologies"><strong>Technologies:</strong> Ubuntu Server, OpenStack (NFVOs), OpenDaylight (SDN, VNFs), C</p>
+        <a href="https://example.com/nfv-project" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Details</a>
       </div>
 
-      <div class="achievement-card">
+      <div class="card-item">
         <h3>Samba Active Directory Deployment</h3>
         <p>Installed and configured Samba as an Active Directory Domain Controller on Linux to manage user authentication and policy-based access control within a mixed OS environment.</p>
-        <p><strong>Technologies:</strong> VMware Workstation, Ubuntu, Windows 10 Pro</p>
-        <a href="https://example.com/samba-ad-deployment" target="_blank" rel="noopener noreferrer">Read more</a>
+        <p class="technologies"><strong>Technologies:</strong> VMware Workstation, Ubuntu, Windows 10 Pro</p>
+        <a href="https://drive.google.com/drive/folders/1EkvWuNMR3bIntsO2FMrclljnz1oZw6mh?usp=sharing" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Details</a>
       </div>
 
-      <div class="achievement-card">
+      <div class="card-item">
         <h3>Oracle 12c Cloud-Based DB Setup</h3>
         <p>Deployed Oracle 12c Database on Microsoft Azure, configured PDBs, managed users and implemented backup/recovery and security mechanisms for high availability.</p>
-        <p><strong>Technologies:</strong> Oracle 12c, Azure Cloud, SQL, Windows</p>
-        <a href="https://example.com/oracle-12c-cloud-db" target="_blank" rel="noopener noreferrer">Read more</a>
+        <p class="technologies"><strong>Technologies:</strong> Oracle 12c, Azure Cloud, SQL, Windows</p>
+        <a href="https://drive.google.com/drive/folders/1NV7AFb1ROgR6RgcixP0rfgLkSSA0AOUG?usp=sharing" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Details</a>
       </div>
 
-      <div class="achievement-card">
+      <div class="card-item">
         <h3>Hospital Network Simulation</h3>
         <p>Designed and documented an end-to-end healthcare facility network layout including routing, switching, and security protocols using simulation tools.</p>
-        <p><strong>Technologies:</strong> Cisco Packet Tracer, Networking Fundamentals</p>
-        <a href="https://example.com/hospital-network-sim" target="_blank" rel="noopener noreferrer">Read more</a>
+        <p class="technologies"><strong>Technologies:</strong> Cisco Packet Tracer, Networking Fundamentals</p>
+        <a href="https://example.com/hospital-network-sim" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Details</a>
       </div>
 
-      <div class="achievement-card">
-        <h3>Microservices Monitoring for DOXMATE</h3>
+      <div class="card-item">
+        <h3>Monitoring of Microservices, Application Servers, and Databases</h3>
         <p>Implemented and visualized system and application metrics for enterprise microservices using Grafana, Prometheus, JMX Exporter, and Node Exporter.</p>
-        <p><strong>Technologies:</strong> Grafana, Prometheus, Node Exporter, JMX Exporter</p>
-        <a href="https://example.com/microservices-monitoring" target="_blank" rel="noopener noreferrer">Read more</a>
+        <p class="technologies"><strong>Technologies:</strong> Grafana, Prometheus, Node Exporter, JMX Exporter</p>
+        <a href="https://example.com/microservices-monitoring" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Details</a>
       </div>
 
-      <div class="achievement-card">
+      <div class="card-item">
         <h3>Multi-Tier Environment for DOXMATE</h3>
         <p>Engineered multi-tier production and UAT environments with NGINX reverse proxies, HAProxy for load balancing, and cluster-based database solutions for critical applications.</p>
-        <p><strong>Technologies:</strong> RHEL 8, Java 8/11, Python, MySQL 5.7, Percona XtraDB Cluster, HAProxy, Apache Tomcat, NFS</p>
-        <a href="https://example.com/multi-tier-env" target="_blank" rel="noopener noreferrer">Read more</a>
+        <p class="technologies"><strong>Technologies:</strong> RHEL 8, Java 8/11, Python, MySQL 5.7, Percona XtraDB Cluster, HAProxy, Apache Tomcat, NFS</p>
+        <a href="https://example.com/multi-tier-env" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Details</a>
       </div>
 
-      <div class="achievement-card">
+      <div class="card-item">
         <h3>DevOps CI/CD Pipeline Automation</h3>
         <p>Automated build, test, and deployment processes for microservices using Jenkins and Ansible, ensuring rapid delivery and rollback support with containerization tools.</p>
-        <p><strong>Technologies:</strong> Jenkins, Ansible, Docker, Prometheus, Grafana, Git, CentOS 7</p>
-        <a href="https://example.com/devops-cicd" target="_blank" rel="noopener noreferrer">Read more</a>
+        <p class="technologies"><strong>Technologies:</strong> Jenkins, Ansible, Docker, Prometheus, Grafana, Git, CentOS 7</p>
+        <a href="https://example.com/devops-cicd" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Details</a>
       </div>
 
-      <div class="achievement-card">
+      <div class="card-item">
         <h3>Mission-Critical Gov System Support</h3>
         <p>Deployed and maintained UAT and live environments for key government platforms such as the Valuation Department and Business Name Registration System.</p>
-        <p><strong>Technologies:</strong> RHEL 8, GlassFish, NGINX, Apache, MySQL, Java, Docker, NFS</p>
-        <a href="https://example.com/gov-system-support" target="_blank" rel="noopener noreferrer">Read more</a>
+        <p class="technologies"><strong>Technologies:</strong> RHEL 8, GlassFish, NGINX, Apache, MySQL, Java, Docker, NFS</p>
+        <a href="https://example.com/gov-system-support" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Details</a>
       </div>
 
-      <div class="achievement-card">
+      <div class="card-item">
         <h3>High Availability with ProxySQL</h3>
         <p>Configured ProxySQL in front of a Percona XtraDB Cluster to ensure high-availability, fault tolerance, and transparent failover for production database workloads.</p>
-        <p><strong>Technologies:</strong> ProxySQL, Percona XtraDB Cluster, MySQL, RHEL</p>
-        <a href="https://example.com/proxysql-ha" target="_blank" rel="noopener noreferrer">Read more</a>
+        <p class="technologies"><strong>Technologies:</strong> ProxySQL, Percona XtraDB Cluster, MySQL, RHEL</p>
+        <a href="https://example.com/proxysql-ha" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Details</a>
       </div>
 
-      <div class="achievement-card">
+      <div class="card-item">
         <h3>CI/CD for Microservices</h3>
         <p>Designed and implemented CI/CD pipelines for 7 backend and 2 frontend services using Jenkins, Docker, Git, and Ansible.</p>
-        <p><strong>Technologies:</strong> Jenkins, Docker, Git, RHEL 8</p>
-        <a href="https://example.com/microservices-cicd" target="_blank" rel="noopener noreferrer">Read more</a>
+        <p class="technologies"><strong>Technologies:</strong> Jenkins, Docker, Git, RHEL 8</p>
+        <a href="https://example.com/microservices-cicd" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Details</a>
+      </div>
+
+      <div class="card-item">
+        <h3>Aqua Sync-Tech Smart Water Meter Billing and Monitoring with Mobile Application</h3>
+        <p>Aqua Sync-Tech is a smart IoT-based water metering system that tracks real-time water usage, detects leaks, and supports remote control. It syncs with a mobile app for easy access by customers and Sri Lanka Water Board staff.</p>
+        <p class="technologies"><strong>Technologies:</strong> NodeMcu, Arduino IDE, Arduino C</p>
+        <a href="https://github.com/Tharindu-Lakshan-manathunga/Aqua-Sync-Tech-Smart-Water-Meter-for-Billing-and-Monitoring-with-Mobile-Application.-.git" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Details</a>
+      </div>
+
+      <div class="card-item">
+        <h3>Final Year Research Project - AgrySense360</h3>
+        <p>Predictive Analytics for Yield Optimization: To forecast crop yields, optimize planting schedules, and enhance productivity.</p>
+        <a href="https://tharindu-lakshan-manathunga.github.io/Agrysense360/" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Details</a>
       </div>
 
     </div>
@@ -164,38 +275,96 @@
 
 
   <!-- Achievements Section -->
-<section id="achievements" class="achievements-section">
+<section id="achievements" class="achievements-section reveal">
   <div class="container">
-    <h2 class="section-title">Achievements</h2>
+    <h2 class="section-title">Achievements & Certifications</h2>
 
-    <!-- Achievements Grid -->
-    <div class="achievements-grid">
-      <div class="achievement-card">
-        <h3>Cloud & DevOps Certified</h3>
-        <p>IBM, AWS, and Oracle certified in DevOps, Containers, and Cloud Architecture.</p>
-        <a href="https://example.com/cloud-devops-certificate" target="_blank" class="btn">View Credential</a>
+    <div class="cards-grid">
+
+      <div class="card-item">
+        <h3>Introduction to DevOps</h3>
+        <p>Issued by Coursera | Authorized by IBM</p>
+        <a href="https://coursera.org/verify/K9CPKJBQG2AQ" target="_blank" class="view-details-btn">View Credential</a>
       </div>
-      <div class="achievement-card">
-        <h3>OCI Foundations Certified</h3>
-        <p>Achieved Oracle Cloud Infrastructure 2023 Foundations Associate certification.</p>
-        <a href="https://example.com/oci-certificate" target="_blank" class="btn">View Credential</a>
+
+      <div class="card-item">
+        <h3>Introduction to Cloud Computing</h3>
+        <p>Issued by Coursera | Authorized by IBM</p>
+        <a href="https://coursera.org/verify/HSH46GNSHFR9" target="_blank" class="view-details-btn">View Credential</a>
       </div>
-      <div class="achievement-card">
-        <h3>Live System Deployment</h3>
-        <p>Contributed to 8+ mission-critical systems in real production environments.</p>
-        <a href="https://example.com/deployment-portfolio" target="_blank" class="btn">View Details</a>
+
+      <div class="card-item">
+        <h3>Introduction to Linux Commands and Shell Scripting</h3>
+        <p>Issued by Coursera | Authorized by IBM</p>
+        <a href="https://www.coursera.org/account/accomplishments/verify/5642URKQTLZA" target="_blank" class="view-details-btn">View Credential</a>
       </div>
+
+      <div class="card-item">
+        <h3>AWS Cloud Technical Essentials</h3>
+        <p>Issued by Coursera | Authorized by AWS</p>
+        <a href="https://coursera.org/verify/JZVQKXPCFJGQ" target="_blank" class="view-details-btn">View Credential</a>
+      </div>
+
+      <div class="card-item">
+        <h3>Introduction to Containers</h3>
+        <p>Docker, Kubernetes & OpenShift | Coursera & IBM</p>
+        <a href="https://coursera.org/verify/5642URKQTLZA" target="_blank" class="view-details-btn">View Credential</a>
+      </div>
+
+      <div class="card-item">
+        <h3>Oracle OCI Foundations Associate</h3>
+        <p>Oracle Cloud Infrastructure 2023 Certified</p>
+        <a href="https://catalog-education.oracle.com/pls/certview/sharebadge?id=D4C91D9E6812461D49302B660CEB4E1B7F59B350CD122C86C51536140724527E" target="_blank" class="view-details-btn">View Credential</a>
+      </div>
+
+      <div class="card-item">
+        <h3>Introduction to Networks</h3>
+        <p>Cisco Networking Academy</p>
+        <a href="https://www.credly.com/badges/e5b634ba-9350-47a7-85ad-4c4f2b5e6a16/linked_in_profile" target="_blank" class="view-details-btn">View Credential</a>
+      </div>
+
+      <div class="card-item">
+        <h3>AZ-104: Azure Administrator</h3>
+        <p>Issued by KodeKloud</p>
+        <a href="https://learn.kodekloud.com/certificate/7e8274af-d166-4ab8-8430-3a9f5101670c" target="_blank" class="view-details-btn">View Credential</a>
+      </div>
+
+      <div class="card-item">
+        <h3>Introduction to Cybersecurity</h3>
+        <p>Issued by Cisco</p>
+        <a href="https://www.credly.com/badges/7f6304c7-1e95-4885-9d69-ca6d8df1e113/public_url" target="_blank" class="view-details-btn">View Credential</a>
+      </div>
+
+      <div class="card-item">
+        <h3>CCNA: Switching, Routing, and Wireless Essentials</h3>
+        <p>Issued by Cisco</p>
+        <a href="https://www.credly.com/badges/b286545b-2bed-47e6-aa28-3e4d9a9ca0e5/linked_in_profile" target="_blank" class="view-details-btn">View Credential</a>
+      </div>
+
+      <div class="card-item">
+        <h3>Oracle OCI Foundations Associate</h3>
+        <p>Oracle Cloud Data Management 2023</p>
+        <a href="https://catalog-education.oracle.com/pls/certview/sharebadge?id=5A42ACCA4EC6B8B2C24AB03A346407E3ABF1799EA3E594455A61945D7EE477A4" target="_blank" class="view-details-btn">View Credential</a>
+      </div>
+
+      <div class="card-item">
+        <h3>Learn Ansible Basics</h3>
+        <p>Beginners Course</p>
+        <a href="https://learn.kodekloud.com/certificate/8773f796-bd21-4d93-8504-c12d80feeb4a" target="_blank" class="view-details-btn">View Credential</a>
+      </div>
+
     </div>
   </div>
 </section>
 
-<!-- Experience Section -->
-<section id="experience" class="experience-section">
+
+<!-- Experience Section Styles -->
+<section id="experience" class="experience-section reveal">
   <div class="container">
     <h2 class="section-title">Experience</h2>
 
     <div class="experience-grid">
-      <div class="experience-card reveal">
+      <div class="experience-card">
         <div class="experience-header">
           <h3>System Support Engineer</h3>
           <h4>Epic Lanka Pvt Ltd <span>• Apr 2024 – Present</span></h4>
@@ -209,8 +378,7 @@
           <li>Worked directly with developers and clients to resolve real-time issues efficiently.</li>
         </ul>
       </div>
-
-      <div class="experience-card reveal">
+      <div class="experience-card">
         <div class="experience-header">
           <h3>DevOps Intern</h3>
           <h4>TechWave Innovations <span>• Jan 2024 – Mar 2024</span></h4>
@@ -227,319 +395,867 @@
   </div>
 </section>
 
-
-
-
-  <!-- Skills Section with Animated Bars -->
- <section id="skills" class="skills-section">
+<!-- Skills Section with Animated Bars -->
+<section id="skills" class="skills-section reveal">
   <div class="container">
     <h2 class="section-title">Skills</h2>
     <div class="skills-grid">
-
-      <div class="skill">
+      <div class="skill-item" data-skill-level="85%">
         <h3>☁️ Cloud Platforms</h3>
-        <div class="skill-bar"><div class="skill-level" style="width: 85%;"></div></div>
+        <div class="skill-bar"><div class="skill-level"></div></div>
         <p>AWS, Azure, OCI</p>
       </div>
-
-      <div class="skill">
+      <div class="skill-item" data-skill-level="90%">
         <h3>🛠️ DevOps Tools</h3>
-        <div class="skill-bar"><div class="skill-level" style="width: 90%;"></div></div>
+        <div class="skill-bar"><div class="skill-level"></div></div>
         <p>Docker, Jenkins, Ansible, Git</p>
       </div>
-
-      <div class="skill">
+      <div class="skill-item" data-skill-level="95%">
         <h3>🐧 Operating Systems</h3>
-        <div class="skill-bar"><div class="skill-level" style="width: 95%;"></div></div>
-        <p>Linux (Ubuntu, CentOS), Windows Server</p>
+        <div class="skill-bar"><div class="skill-level"></div></div>
+        <p>Linux (Ubuntu, CentOS, RHEL), Windows Server</p>
       </div>
-
-      <div class="skill">
+      <div class="skill-item" data-skill-level="80%">
         <h3>📊 Monitoring</h3>
-        <div class="skill-bar"><div class="skill-level" style="width: 80%;"></div></div>
+        <div class="skill-bar"><div class="skill-level"></div></div>
         <p>Grafana, Prometheus, Netdata</p>
       </div>
-
-      <div class="skill">
+      <div class="skill-item" data-skill-level="85%">
         <h3>🗄️ Databases</h3>
-        <div class="skill-bar"><div class="skill-level" style="width: 85%;"></div></div>
-        <p>MySQL, PostgreSQL, MongoDB, Oracle</p>
+        <div class="skill-bar"><div class="skill-level"></div></div>
+        <p>MySQL, PostgreSQL, MongoDB, Oracle, Percona Extradb Cluster</p>
       </div>
-
-      <div class="skill">
+      <div class="skill-item" data-skill-level="75%">
         <h3>🔒 Security & Networking</h3>
-        <div class="skill-bar"><div class="skill-level" style="width: 75%;"></div></div>
-        <p>Samba AD, ProxySQL, Load Balancing</p>
+        <div class="skill-bar"><div class="skill-level"></div></div>
+        <p>Samba AD, ProxySQL, Load Balancing, HAProxy</p>
       </div>
-
-      <div class="skill">
+      <div class="skill-item" data-skill-level="70%">
         <h3>💻 Programming & Scripting</h3>
-        <div class="skill-bar"><div class="skill-level" style="width: 70%;"></div></div>
+        <div class="skill-bar"><div class="skill-level"></div></div>
         <p>Bash, Python, SQL, C</p>
       </div>
-
     </div>
   </div>
 </section>
-
 
 <section id="cv" class="cv-section reveal">
   <div class="container">
     <h2 class="section-title">Curriculum Vitae</h2>
-
     <div class="cv-pages">
-      <img src="mycv2.png" alt="CV Page 1" class="cv-page" data-index="0" />
-      <img src="mycv1.png" alt="CV Page 2" class="cv-page" data-index="1" />
+      <!-- Ensure 'my_cv2.png' and 'my_cv1.png' are in the same directory -->
+      <img src="my_cv2.png" alt="Tharindu Lakshan CV Page 1" class="cv-page" onclick="openCvModal(0)" />
+      <img src="my_cv1.png" alt="Tharindu Lakshan CV Page 2" class="cv-page" onclick="openCvModal(1)" />
     </div>
-
-    <div class="cv-download">
-      <a href="my_cv.pdf" download class="btn">Download Full CV</a>
-    </div>
-  </div>
-
-  <!-- Modal Popup -->
-  <div id="cv-modal" class="modal">
-    <button class="modal-close" aria-label="Close CV Viewer">&times;</button>
-    <button class="modal-prev" aria-label="Previous Page">&#10094;</button>
-    <button class="modal-next" aria-label="Next Page">&#10095;</button>
-    
-    <img src="" alt="CV Page Enlarged" class="modal-content" id="modal-image" />
-
-    <!-- Zoom Controls -->
-    <div class="modal-controls">
-      <button id="zoom-in">Zoom In +</button>
-      <button id="zoom-out">Zoom Out −</button>
-      <button id="zoom-reset">Reset</button>
+    <div class="cv-controls">
+      <!-- Ensure 'Tharindu Lakshan - CV.pdf' is in the same directory -->
+      <button class="btn-primary" onclick="window.open('Tharindu Lakshan - CV.pdf', '_blank')">Download CV</button>
     </div>
   </div>
 </section>
 
+<!-- CV Modal -->
+<div id="cvModal" class="modal">
+  <span class="modal-close" onclick="closeCvModal()">&times;</span>
+  <span class="modal-nav prev" onclick="changeCvPage(-1)">&#10094;</span>
+  <span class="modal-nav next" onclick="changeCvPage(1)">&#10095;</span>
+  <div class="modal-content cv-content-zoom-pan">
+    <img id="cvModalImage" src="" />
+  </div>
+  <div class="modal-controls">
+    <button onclick="changeCvPage(-1)">Previous</button>
+    <button onclick="changeCvPage(1)">Next</button>
+  </div>
+</div>
 
+<!-- Testimonials Section -->
+<section id="testimonials" class="testimonials-section reveal">
+  <div class="container">
+    <h2 class="section-title">What People Say</h2>
 
-  <!-- Testimonials Section -->
-  <section id="testimonials" class="testimonials-section">
-    <div class="container">
-      <h2 class="section-title">Testimonials</h2>
-      
-      <!-- Simple testimonial slider -->
-      <div class="testimonial-slider">
-        <div class="testimonial active">
-          <p>"Tharindu is a reliable team player who takes initiative in solving complex infrastructure issues. Excellent work ethic!"</p>
-          <h4>- Shanika Sugathadasa, EPIC Lanka</h4>
+    <div class="testimonial-carousel">
+      <!-- Testimonial 1 -->
+      <div class="testimonial-slide">
+        <p class="testimonial">“Tharindu is a highly dedicated and proactive System Support Engineer. His ability to quickly grasp complex systems and troubleshoot issues effectively was invaluable to our team. He's a true asset in production environments.”</p>
+        <p class="testimonial-author">- [Manager/Supervisor Name], [Company Name]</p>
+      </div>
+      <!-- Testimonial 2 -->
+      <div class="testimonial-slide">
+        <p class="testimonial">“Working with Tharindu on the CI/CD pipeline project was a pleasure. His knowledge of Docker and Jenkins significantly sped up our development cycles. He's an excellent collaborator and problem-solver.”</p>
+        <p class="testimonial-author">- [Colleague/Team Lead Name], [Company Name]</p>
+      </div>
+      <!-- Add more testimonials here -->
+    </div>
+    <div class="carousel-nav">
+      <span class="dot active" onclick="currentSlide(1)"></span>
+      <span class="dot" onclick="currentSlide(2)"></span>
+      <!-- Add more dots for more testimonials -->
+    </div>
+  </div>
+</section>
+
+<!-- Gallery Section - Automatic Carousel with Image Names and Click-to-Open Modal -->
+<section id="gallery" class="gallery-section reveal">
+  <div class="container">
+    <h2 class="section-title">Gallery</h2>
+    <div class="gallery-carousel-container">
+      <div class="gallery-carousel">
+        <!-- IMPORTANT: REPLACE THESE SRC ATTRIBUTES WITH YOUR ACTUAL IMAGE PATHS -->
+        <!-- Example: <div class="gallery-slide"><img src="images/my-gallery-pic-1.jpg" alt="Description 1" onclick="openGalleryModal(0)" /><div class="gallery-caption">Project Setup</div></div> -->
+        <div class="gallery-slide">
+          <img src="gallery-1.jpg" alt="Project Setup" onclick="openGalleryModal(0)" />
+          <div class="gallery-caption">Project Setup</div>
         </div>
-        <div class="testimonial">
-          <p>"Shows exceptional discipline and hands-on ability in real-world DevOps and system integration tasks."</p>
-          <h4>- Ms. Shashika Lokuliyana, SLIIT</h4>
+        <div class="gallery-slide">
+          <img src="gallery-2.jpg" alt="Team Collaboration" onclick="openGalleryModal(1)" />
+          <div class="gallery-caption">Team Collaboration</div>
+        </div>
+        <div class="gallery-slide">
+          <img src="gallery-3.jpg" alt="Cloud Infrastructure" onclick="openGalleryModal(2)" />
+          <div class="gallery-caption">Cloud Infrastructure</div>
+        </div>
+        <div class="gallery-slide">
+          <img src="gallery-4.jpg" alt="DevOps Pipeline" onclick="openGalleryModal(3)" />
+          <div class="gallery-caption">DevOps Pipeline</div>
+        </div>
+        <div class="gallery-slide">
+          <img src="gallery-5.jpg" alt="System Monitoring" onclick="openGalleryModal(4)" />
+          <div class="gallery-caption">System Monitoring</div>
+        </div>
+        <div class="gallery-slide">
+          <img src="gallery-6.jpg" alt="Networking Diagram" onclick="openGalleryModal(5)" />
+          <div class="gallery-caption">Networking Diagram</div>
         </div>
       </div>
+      <span class="gallery-nav prev" onclick="plusGallerySlides(-1)">&#10094;</span>
+      <span class="gallery-nav next" onclick="plusGallerySlides(1)">&#10095;</span>
     </div>
-  </section>
-
-
-
-
-  <!-- Contact Section with form -->
-  <section id="contact" class="contact-section">
-    <div class="container">
-      <h2 class="section-title">Contact Me</h2>
-      
-      <!-- Simple contact form -->
-      <form class="contact-form">
-        <input type="text" placeholder="Tharindu" required />
-        <input type="email" placeholder="tlakshan300@gmail.com" required />
-        <textarea placeholder="Your Message" rows="5" required></textarea>
-        <button type="submit" class="btn-primary">Send Message</button>
-      </form>
+    <div class="gallery-dots-container">
+      <!-- Dots will be dynamically generated by JS -->
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- Footer Section -->
-  <footer>
-    <div class="container">
-      <p>© 2025 Tharindu Lakshan. All rights reserved.</p>
-      <!-- Social Media Links -->
-      <div class="social-links">
-        <a href="https://www.linkedin.com/in/tharindu-lakshan-mn/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
-        <a href="https://github.com/Tharindu-Lakshan-manathunga" target="_blank" rel="noopener noreferrer">GitHub</a>
-        <a href="mailto:tlakshan300@gmail.com">Email</a>
+<!-- Gallery Image Modal (for click-to-view large image) -->
+<div id="galleryImageModal" class="modal">
+  <span class="modal-close" onclick="closeGalleryModal()">&times;</span>
+  <div class="modal-content">
+    <img id="galleryModalImage" src="" alt="Full size image" />
+  </div>
+</div>
+
+
+<!-- Contact Section -->
+<section id="contact" class="contact-section reveal">
+  <div class="container">
+    <h2 class="section-title">Get In Touch</h2>
+    <p class="contact-intro">Have a question or want to collaborate? Feel free to reach out!</p>
+
+    <div class="contact-content">
+      <div class="contact-info">
+        <h3>Contact Details</h3>
+        <p><i class="fas fa-envelope"></i> Email: <a href="mailto:tharindulakshan.dev@gmail.com">tharindulakshan.dev@gmail.com</a></p>
+        <p><i class="fas fa-phone"></i> Phone: +94 71 889 0601</p>
+        <p><i class="fas fa-map-marker-alt"></i> Location: Galle, Sri Lanka</p>
+        
+        <div class="social-links">
+          <a href="https://github.com/Tharindu-Lakshan-manathunga" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><i class="fab fa-github"></i></a>
+          <a href="https://linkedin.com/in/tharindulakshanmanathunga" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+          <a href="https://stackoverflow.com/users/your-stackoverflow-id" target="_blank" rel="noopener noreferrer" aria-label="Stack Overflow"><i class="fab fa-stack-overflow"></i></a>
+          <a href="https://medium.com/@tharindulakshan.dev" target="_blank" rel="noopener noreferrer" aria-label="Medium"><i class="fab fa-medium"></i></a>
+        </div>
+      </div>
+
+      <div class="contact-form-container">
+        <h3>Send a Message</h3>
+        <form id="contactForm" action="https://formspree.io/f/your-formspree-id" method="POST"> <!-- IMPORTANT: REPLACE THIS WITH YOUR ACTUAL FORMSPREE ID -->
+          <div class="form-group">
+            <input type="text" id="name" name="name" placeholder="Your Name" required />
+          </div>
+          <div class="form-group">
+            <input type="email" id="email" name="email" placeholder="Your Email" required />
+          </div>
+          <div class="form-group">
+            <input type="text" id="subject" name="subject" placeholder="Subject" required />
+          </div>
+          <div class="form-group">
+            <textarea id="message" name="message" rows="5" placeholder="Your Message" required></textarea>
+          </div>
+          <button type="submit" class="btn-primary">Send Message</button>
+          <div id="form-status" class="form-status"></div>
+        </form>
       </div>
     </div>
-  </footer>
+  </div>
+</section>
 
-  <!-- JavaScript Section -->
+<!-- Footer Section -->
+<footer class="footer-section">
+  <div class="container">
+    <p>&copy; <span id="current-year"></span> Tharindu Lakshan. All rights reserved.</p>
+    <p>Designed with ❤️ by Tharindu</p>
+    <p id="user-id-display" style="font-size: 0.8em; opacity: 0.7; margin-top: 5px;">User ID: Loading...</p>
+  </div>
+</footer>
 
- <script>
-  // Typing Effect for Hero Section
-  const words = ["System Engineer", "DevOps Enthusiast", "Cloud Practitioner", "Linux Administrator"];
-  let i = 0, charIndex = 0;
-  const typedText = document.getElementById("typed-text");
+<!-- Scroll-to-top Button -->
+<button id="scroll-to-top-btn" class="scroll-to-top-btn" aria-label="Scroll to top">
+  <i class="fas fa-arrow-up"></i>
+</button>
 
-  function type() {
-    if (charIndex < words[i].length) {
-      typedText.textContent += words[i].charAt(charIndex);
-      charIndex++;
-      setTimeout(type, 150);
-    } else {
-      setTimeout(erase, 2000);
-    }
-  }
+<!-- Chatbot Button -->
+<button id="chatbot-toggle-btn" class="chatbot-toggle-btn" aria-label="Open Chatbot">
+  <i class="fas fa-comments"></i>
+</button>
 
-  function erase() {
-    if (charIndex > 0) {
-      typedText.textContent = words[i].substring(0, charIndex - 1);
-      charIndex--;
-      setTimeout(erase, 100);
-    } else {
-      i = (i + 1) % words.length;
-      setTimeout(type, 500);
-    }
-  }
+<!-- Chatbot Modal -->
+<div id="chatbot-modal" class="chatbot-modal">
+  <div class="chatbot-header">
+    <h3>Tharindu's AI Assistant</h3>
+    <button class="chatbot-close-btn" aria-label="Close Chatbot">&times;</button>
+  </div>
+  <div class="chatbot-body" id="chatbot-body">
+    <!-- Chatbot conversation will appear here -->
+    <div class="chat-message bot">Hello! I'm Tharindu's AI Assistant. How can I help you today?</div>
+    <div class="chat-message bot">You can ask me about his skills, experience, projects, or how to contact him.</div>
+    <div class="suggested-questions">
+        <button class="suggestion-btn" onclick="sendSuggestedMessage('What are Tharindu\'s key skills?')">Skills</button>
+        <button class="suggestion-btn" onclick="sendSuggestedMessage('Tell me about Tharindu\'s experience.')">Experience</button>
+        <button class="suggestion-btn" onclick="sendSuggestedMessage('What projects has Tharindu worked on?')">Projects</button>
+        <button class="suggestion-btn" onclick="sendSuggestedMessage('How can I contact Tharindu?')">Contact</button>
+    </div>
+  </div>
+  <div class="chatbot-input-area">
+    <input type="text" id="chatbot-input" placeholder="Type your message..." />
+    <button id="chatbot-send-btn" class="chat-send-btn" aria-label="Send message"><i class="fas fa-paper-plane"></i></button>
+  </div>
+</div>
 
-  type();
 
-  // Smooth scrolling for navbar links
-  const navLinks = document.querySelectorAll(".nav-link");
-  navLinks.forEach(link => {
-    link.addEventListener("click", e => {
-      e.preventDefault();
-      const targetId = link.getAttribute("href").substring(1);
-      document.getElementById(targetId).scrollIntoView({ behavior: "smooth" });
-    });
-  });
-
-  // Navbar active link highlight on scroll
-  window.addEventListener("scroll", () => {
-    const scrollPos = window.scrollY + window.innerHeight / 3;
-    document.querySelectorAll("section").forEach(section => {
-      if (scrollPos >= section.offsetTop && scrollPos < section.offsetTop + section.offsetHeight) {
-        navLinks.forEach(link => link.classList.remove("active"));
-        const activeLink = document.querySelector(`.nav-link[href="#${section.id}"]`);
-        if (activeLink) activeLink.classList.add("active");
-      }
-    });
-  });
-
-  // Scroll reveal animation with stagger effect
-  const reveals = document.querySelectorAll(".reveal");
-
-  function revealOnScroll() {
-    const windowHeight = window.innerHeight;
-    const revealPoint = 120;
-
-    reveals.forEach((element, index) => {
-      const elementTop = element.getBoundingClientRect().top;
-      if (elementTop < windowHeight - revealPoint) {
+<script>
+    // Preloader functionality
+    window.addEventListener('load', () => {
+      const preloader = document.getElementById('preloader');
+      if (preloader) {
+        preloader.classList.add('fade-out');
+        // Fallback: Ensure preloader hides after a fixed time even if load event is delayed by assets
         setTimeout(() => {
-          element.classList.add("active");
-        }, index * 200); // 200ms stagger
+          preloader.style.display = 'none';
+          document.body.style.overflow = ''; // Re-enable scrolling
+        }, 3000); // Hide after 3 seconds, regardless of all assets loading
       }
     });
-  }
 
-  window.addEventListener("scroll", revealOnScroll);
-  window.addEventListener("load", revealOnScroll);
+    // Dynamic copyright year
+    document.getElementById('current-year').textContent = new Date().getFullYear();
 
-  // --- CV Modal Script ---
-  const cvPages = document.querySelectorAll(".cv-page");
-  const modal = document.getElementById("cv-modal");
-  const modalImg = document.getElementById("modal-image");
-  const closeBtn = modal.querySelector(".modal-close");
-  const nextBtn = modal.querySelector(".modal-next");
-  const prevBtn = modal.querySelector(".modal-prev");
-  const zoomInBtn = document.getElementById("zoom-in");
-  const zoomOutBtn = document.getElementById("zoom-out");
-  const zoomResetBtn = document.getElementById("zoom-reset");
+    // Typed.js (for hero section typing effect)
+    document.addEventListener('DOMContentLoaded', function() {
+      if (document.getElementById('typed-text')) {
+        new Typed('#typed-text', {
+          strings: [
+            "A System Support Engineer",
+            "A DevOps Enthusiast",
+            "A Cloud Practitioner",
+            "A CSNE Undergraduate"
+          ],
+          typeSpeed: 70,
+          backSpeed: 30,
+          loop: true,
+          showCursor: true,
+          cursorChar: '|',
+        });
+      }
+    });
 
-  const cvImages = [
-    "mycv2.png",
-    "mycv1.png"
-  ];
+    // Dark/Light Mode Toggle
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    const body = document.body;
 
-  let currentIndex = 0;
-  let currentScale = 1;
-  const scaleStep = 0.2;
-  const minScale = 1;
-  const maxScale = 3;
-
-  function openModal(index) {
-    currentIndex = index;
-    currentScale = 1;
-    updateImage();
-    modal.classList.add("active");
-  }
-
-  function updateImage() {
-    modalImg.src = cvImages[currentIndex];
-    modalImg.style.transform = `scale(${currentScale})`;
-  }
-
-  function closeModal() {
-    modal.classList.remove("active");
-    currentScale = 1;
-    modalImg.style.transform = `scale(${currentScale})`;
-  }
-
-  function showNext() {
-    currentIndex = (currentIndex + 1) % cvImages.length;
-    currentScale = 1;
-    updateImage();
-  }
-
-  function showPrev() {
-    currentIndex = (currentIndex - 1 + cvImages.length) % cvImages.length;
-    currentScale = 1;
-    updateImage();
-  }
-
-  function zoomIn() {
-    if (currentScale < maxScale) {
-      currentScale = Math.min(maxScale, currentScale + scaleStep);
-      modalImg.style.transform = `scale(${currentScale})`;
+    const currentTheme = localStorage.getItem('theme');
+    if (currentTheme) {
+      body.setAttribute('data-theme', currentTheme);
+      updateThemeIcon(currentTheme);
+    } else {
+        // Default to dark if no preference is saved
+        body.setAttribute('data-theme', 'dark');
+        updateThemeIcon('dark');
     }
-  }
 
-  function zoomOut() {
-    if (currentScale > minScale) {
-      currentScale = Math.max(minScale, currentScale - scaleStep);
-      modalImg.style.transform = `scale(${currentScale})`;
+    function updateThemeIcon(theme) {
+        const sunIcon = themeToggleBtn.querySelector('.fa-sun');
+        const moonIcon = themeToggleBtn.querySelector('.fa-moon');
+        if (theme === 'dark') {
+            sunIcon.style.display = 'none';
+            moonIcon.style.display = 'inline-block';
+        } else {
+            sunIcon.style.display = 'inline-block';
+            moonIcon.style.display = 'none';
+        }
     }
-  }
 
-  function zoomReset() {
-    currentScale = 1;
-    modalImg.style.transform = `scale(${currentScale})`;
-  }
+    themeToggleBtn.addEventListener('click', () => {
+      let theme = body.getAttribute('data-theme');
+      if (theme === 'dark') {
+        body.setAttribute('data-theme', 'light');
+        localStorage.setItem('theme', 'light');
+        updateThemeIcon('light');
+      } else {
+        body.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+        updateThemeIcon('dark');
+      }
+    });
 
-  // Zoom on mouse wheel
-  modalImg.addEventListener("wheel", (e) => {
-    e.preventDefault();
-    e.deltaY < 0 ? zoomIn() : zoomOut();
-  });
 
-  // Add Event Listeners
-  cvPages.forEach((page, idx) => {
-    page.addEventListener("click", () => openModal(idx));
-  });
+    // Testimonials Carousel
+    let testimonialSlideIndex = 1;
+    const testimonialSlides = document.getElementsByClassName("testimonial-slide");
+    const testimonialDots = document.querySelectorAll("#testimonials .dot"); // More specific selector
 
-  closeBtn.addEventListener("click", closeModal);
-  nextBtn.addEventListener("click", showNext);
-  prevBtn.addEventListener("click", showPrev);
-  zoomInBtn.addEventListener("click", zoomIn);
-  zoomOutBtn.addEventListener("click", zoomOut);
-  zoomResetBtn.addEventListener("click", zoomReset);
+    function showTestimonialSlides(n) {
+      if (testimonialSlides.length === 0) return;
+      let i;
+      if (n > testimonialSlides.length) { testimonialSlideIndex = 1 }
+      if (n < 1) { testimonialSlideIndex = testimonialSlides.length }
+      for (i = 0; i < testimonialSlides.length; i++) {
+        testimonialSlides[i].style.display = "none";
+      }
+      for (i = 0; i < testimonialDots.length; i++) {
+        testimonialDots[i].classList.remove("active");
+      }
+      testimonialSlides[testimonialSlideIndex - 1].style.display = "block";
+      testimonialDots[testimonialSlideIndex - 1].classList.add("active");
+    }
 
-  // Keyboard shortcuts
-  window.addEventListener("keydown", (e) => {
-    if (!modal.classList.contains("active")) return;
-    if (e.key === "Escape") closeModal();
-    if (e.key === "ArrowRight") showNext();
-    if (e.key === "ArrowLeft") showPrev();
-  });
+    function plusTestimonialSlides(n) {
+      showTestimonialSlides(testimonialSlideIndex += n);
+    }
 
-  // Click outside image closes modal
-  modal.addEventListener("click", (e) => {
-    if (e.target === modal) closeModal();
-  });
+    function currentSlide(n) { // Kept original function name for simplicity
+      showTestimonialSlides(testimonialSlideIndex = n);
+    }
+
+    // Auto-advance testimonial carousel
+    if (testimonialSlides.length > 0) {
+        setInterval(() => {
+            plusTestimonialSlides(1);
+        }, 5000); // Change slide every 5 seconds
+        showTestimonialSlides(testimonialSlideIndex); // Initial call
+    }
+
+
+    // Gallery Carousel (Automatic and Manual)
+    let gallerySlideIndex = 0; // Start with index 0
+    const gallerySlides = document.querySelectorAll(".gallery-carousel .gallery-slide");
+    const galleryCarouselElement = document.querySelector(".gallery-carousel");
+    const galleryDotsContainer = document.querySelector(".gallery-dots-container");
+    let galleryInterval;
+
+    function createGalleryDots() {
+      galleryDotsContainer.innerHTML = ''; // Clear existing dots
+      for (let i = 0; i < gallerySlides.length; i++) {
+        const dot = document.createElement('span');
+        dot.classList.add('gallery-dot');
+        if (i === 0) dot.classList.add('active');
+        dot.onclick = () => currentGallerySlide(i);
+        galleryDotsContainer.appendChild(dot);
+      }
+    }
+
+    function showGallerySlides(n) {
+        if (gallerySlides.length === 0) return;
+        
+        gallerySlideIndex = (n + gallerySlides.length) % gallerySlides.length; // Ensure index wraps around
+
+        // Apply transform to the carousel container
+        galleryCarouselElement.style.transform = `translateX(-${gallerySlideIndex * 100}%)`;
+
+        // Only toggle display for the active slide (and hide others) for better performance/transition
+        // The display property should be handled by CSS for flex/grid, but as fallback for cross-browser
+        gallerySlides.forEach((slide, index) => {
+            if (index === gallerySlideIndex) {
+                slide.style.display = "block"; // Show current slide
+            } else {
+                slide.style.display = "none"; // Hide other slides
+            }
+        });
+
+        document.querySelectorAll(".gallery-dot").forEach((dot, index) => {
+            dot.classList.remove("active"); // Deactivate all dots
+        });
+
+        document.querySelectorAll(".gallery-dot")[gallerySlideIndex].classList.add("active"); // Activate current dot
+    }
+
+    function plusGallerySlides(n) {
+        showGallerySlides(gallerySlideIndex + n);
+        resetGalleryInterval();
+    }
+
+    function currentGallerySlide(n) {
+        showGallerySlides(n);
+        resetGalleryInterval();
+    }
+
+    function startGalleryInterval() {
+        galleryInterval = setInterval(() => {
+            plusGallerySlides(1);
+        }, 4000); // Change slide every 4 seconds
+    }
+
+    function resetGalleryInterval() {
+        clearInterval(galleryInterval);
+        startGalleryInterval();
+    }
+
+    // Initialize gallery on DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', () => {
+        if (gallerySlides.length > 0) {
+            createGalleryDots();
+            showGallerySlides(0); // Show the first slide
+            startGalleryInterval(); // Start auto-cycling
+        }
+    });
+
+    // Gallery Image Modal (for click-to-view large image)
+    const galleryImageModal = document.getElementById('galleryImageModal');
+    const galleryModalImage = document.getElementById('galleryModalImage');
+
+    function openGalleryModal(index) {
+      if (gallerySlides.length > 0 && gallerySlides[index]) {
+        galleryModalImage.src = gallerySlides[index].querySelector('img').src;
+        galleryImageModal.style.display = 'block';
+        document.body.style.overflow = 'hidden'; // Prevent background scroll
+      }
+    }
+
+    function closeGalleryModal() {
+      galleryImageModal.style.display = 'none';
+      document.body.style.overflow = ''; // Re-enable background scroll
+    }
+
+
+    // CV Modal (Zoom and Pan)
+    const cvModal = document.getElementById('cvModal');
+    const cvModalImage = document.getElementById('cvModalImage');
+    const cvPages = Array.from(document.querySelectorAll('.cv-section .cv-page')); // Get all CV images
+    let currentCvPageIndex = 0;
+    let scale = 1;
+    let panning = false;
+    let pointX = 0;
+    let pointY = 0;
+    let startX = 0;
+    let startY = 0;
+
+    // Reset zoom/pan when closing or changing page
+    function resetCvTransform() {
+      scale = 1;
+      pointX = 0;
+      pointY = 0;
+      cvModalImage.style.transform = `scale(${scale}) translate(${pointX}px, ${pointY}px)`;
+      cvModalImage.style.transformOrigin = `center center`; // Reset origin to center
+      cvModalImage.style.cursor = 'zoom-in';
+    }
+
+    function openCvModal(index) {
+      currentCvPageIndex = index;
+      cvModalImage.src = cvPages[currentCvPageIndex].src;
+      cvModal.style.display = 'block';
+      document.body.style.overflow = 'hidden'; // Prevent background scroll
+      
+      // Ensure image loads before attempting reset and allowing interaction
+      cvModalImage.onload = () => {
+        resetCvTransform();
+      };
+      // If image is already cached, onload might not fire, so reset immediately too
+      if (cvModalImage.complete) {
+          resetCvTransform();
+      }
+    }
+
+    function closeCvModal() {
+      cvModal.style.display = 'none';
+      document.body.style.overflow = ''; // Re-enable background scroll
+      resetCvTransform();
+    }
+
+    function changeCvPage(n) {
+      currentCvPageIndex += n;
+      if (currentCvPageIndex >= cvPages.length) {
+        currentCvPageIndex = 0;
+      } else if (currentCvPageIndex < 0) {
+        currentCvPageIndex = cvPages.length - 1;
+      }
+      cvModalImage.src = cvPages[currentCvPageIndex].src;
+      // Reset transform after changing image source
+      cvModalImage.onload = () => {
+        resetCvTransform();
+      };
+      if (cvModalImage.complete) {
+          resetCvTransform();
+      }
+    }
+
+    // Zoom functionality (click to toggle zoom)
+    cvModalImage.addEventListener('click', (e) => {
+        e.preventDefault(); // Prevent default click behavior
+        if (scale === 1) { // Zoom in
+            scale = 2; // Zoom to 2x
+            const rect = cvModalImage.getBoundingClientRect();
+            // Calculate click position relative to image
+            const x = (e.clientX - rect.left) / rect.width;
+            const y = (e.clientY - rect.top) / rect.height;
+
+            cvModalImage.style.transformOrigin = `${x * 100}% ${y * 100}%`;
+            cvModalImage.style.transform = `scale(${scale})`;
+            cvModalImage.style.cursor = 'grab';
+        } else { // Zoom out
+            resetCvTransform();
+            cvModalImage.style.cursor = 'zoom-in';
+        }
+    });
+
+    // Pan functionality (drag when zoomed)
+    cvModalImage.addEventListener('mousedown', (e) => {
+      if (scale > 1) {
+        e.preventDefault();
+        panning = true;
+        startX = e.clientX - pointX;
+        startY = e.clientY - pointY;
+        cvModalImage.style.cursor = 'grabbing';
+      }
+    });
+
+    cvModalImage.addEventListener('mouseup', () => {
+      panning = false;
+      if (scale > 1) {
+        cvModalImage.style.cursor = 'grab';
+      } else {
+        cvModalImage.style.cursor = 'zoom-in';
+      }
+    });
+
+    cvModalImage.addEventListener('mousemove', (e) => {
+      if (!panning || scale === 1) return;
+      e.preventDefault();
+      pointX = e.clientX - startX;
+      pointY = e.clientY - startY;
+
+      // Apply bounds to panning (more robust calculation)
+      const maxTranslateX = (cvModalImage.offsetWidth * scale - cvModalImage.offsetWidth) / (2 * scale);
+      const maxTranslateY = (cvModalImage.offsetHeight * scale - cvModalImage.offsetHeight) / (2 * scale);
+
+      pointX = Math.max(-maxTranslateX, Math.min(maxTranslateX, pointX));
+      pointY = Math.max(-maxTranslateY, Math.min(maxTranslateY, pointY));
+
+      cvModalImage.style.transform = `scale(${scale}) translate(${pointX}px, ${pointY}px)`;
+    });
+
+    // Handle mouse wheel for zooming
+    cvModalImage.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const zoomAmount = 0.1;
+      const oldScale = scale;
+
+      if (e.deltaY < 0) { // Zoom in
+        scale += zoomAmount;
+      } else { // Zoom out
+        scale -= zoomAmount;
+      }
+
+      scale = Math.max(1, Math.min(3, scale)); // Limit zoom from 1x to 3x
+
+      if (scale !== oldScale) {
+        const rect = cvModalImage.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width;
+        const y = (e.clientY - rect.top) / rect.height;
+
+        cvModalImage.style.transformOrigin = `${x * 100}% ${y * 100}%`;
+        cvModalImage.style.transform = `scale(${scale})`;
+      }
+
+      cvModalImage.style.cursor = scale > 1 ? 'grab' : 'zoom-in';
+      panning = false; // Stop panning on zoom
+    });
+
+
+    // Disable context menu on image to avoid interference with clicks
+    cvModalImage.addEventListener('contextmenu', (e) => e.preventDefault());
+
+
+    // Smooth Scrolling for Navigation Links & Active State
+    document.querySelectorAll('a.nav-link[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const targetId = this.getAttribute('href');
+        document.querySelector(targetId).scrollIntoView({
+          behavior: 'smooth'
+        });
+      });
+    });
+
+    // Navbar scroll effect and active link highlighting
+    window.addEventListener('scroll', function() {
+        const navbar = document.querySelector('.navbar');
+        // Navbar scrolled class
+        if (window.scrollY > 50) { // When scrolled more than 50px
+            navbar.classList.add('scrolled');
+        } else {
+            navbar.classList.remove('scrolled');
+        }
+
+        // Highlight active nav link based on scroll position
+        const sections = document.querySelectorAll('section');
+        sections.forEach(section => {
+            // Adjust top offset to account for fixed navbar height, plus a little buffer
+            const top = section.offsetTop - navbar.offsetHeight - 20; 
+            const height = section.clientHeight;
+            const id = section.getAttribute('id');
+            const navLink = document.querySelector(`.nav-link[href="#${id}"]`);
+
+            if (navLink && window.scrollY >= top && window.scrollY < top + height) {
+                // Remove 'active' from all links first
+                document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+                // Add 'active' to the current section's link
+                navLink.classList.add('active');
+            }
+        });
+    });
+
+
+    // Intersection Observer for Scroll Reveal Animations
+    const revealElements = document.querySelectorAll('.reveal');
+
+    const observerOptions = {
+      root: null, // relative to the viewport
+      rootMargin: '0px',
+      threshold: 0.1 // 10% of the element must be visible
+    };
+
+    const observer = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('active');
+          
+          // For cards grid (projects, achievements) and experience grid and skill items
+          const items = entry.target.querySelectorAll('.card-item, .experience-card, .skill-item');
+          items.forEach((item, index) => {
+            // Only add active if not already active to prevent re-triggering
+            if (!item.classList.contains('active')) {
+              setTimeout(() => {
+                item.classList.add('active');
+                // For skill bars, trigger width animation after active class
+                if (item.classList.contains('skill-item')) {
+                    const skillLevelDiv = item.querySelector('.skill-level');
+                    if (skillLevelDiv && item.dataset.skillLevel) {
+                        skillLevelDiv.style.width = item.dataset.skillLevel;
+                    }
+                }
+              }, index * 100); // Stagger by 100ms
+            }
+          });
+          observer.unobserve(entry.target); // Stop observing once revealed
+        }
+      });
+    }, observerOptions);
+
+    revealElements.forEach(element => {
+      observer.observe(element);
+    });
+
+    // Contact Form Submission
+    const contactForm = document.getElementById('contactForm');
+    const formStatus = document.getElementById('form-status');
+
+    if (contactForm) { // Ensure form exists before attaching listener
+        contactForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            formStatus.textContent = 'Sending message...';
+            formStatus.className = 'form-status sending';
+
+            const formData = new FormData(contactForm);
+            try {
+                // IMPORTANT: Replace 'https://formspree.io/f/your-formspree-id' with your actual Formspree endpoint URL
+                const response = await fetch(contactForm.action, { 
+                    method: contactForm.method,
+                    body: formData,
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    formStatus.textContent = 'Message sent successfully! Thank you.';
+                    formStatus.className = 'form-status success';
+                    contactForm.reset();
+                } else {
+                    const data = await response.json();
+                    if (data && data.errors) {
+                        formStatus.textContent = data.errors.map(error => error.message).join(', ');
+                    } else {
+                        formStatus.textContent = 'Oops! There was a problem sending your message. Please try again.';
+                    }
+                    formStatus.className = 'form-status error';
+                    console.error('Form submission error response:', data);
+                }
+            } catch (error) {
+                formStatus.textContent = 'Network error. Please check your connection and try again.';
+                formStatus.className = 'form-status error';
+                console.error('Form submission network error:', error);
+            }
+        });
+    }
+
+    // Chatbot Modal Functionality (with Firebase Cloud Function Integration)
+    const chatbotToggleBtn = document.getElementById('chatbot-toggle-btn');
+    const chatbotModal = document.getElementById('chatbot-modal');
+    const chatbotCloseBtn = document.querySelector('.chatbot-close-btn');
+    const chatbotInput = document.getElementById('chatbot-input');
+    const chatbotSendBtn = document.getElementById('chatbot-send-btn');
+    const chatbotBody = document.getElementById('chatbot-body');
+
+    // IMPORTANT: REPLACE WITH YOUR ACTUAL FIREBASE PROJECT ID
+    // Example: const projectId = "your-firebase-project-id";
+    const projectId = "aboutme-7847c"; // Replace with your Firebase Project ID
+
+    // Cloud Function Endpoint - THIS WILL BE YOUR CLOUD FUNCTION'S HTTP TRIGGER URL
+    // Format: https://<REGION>-<PROJECT_ID>.cloudfunctions.net/<FUNCTION_NAME>
+    // For local testing: http://localhost:5001/<PROJECT_ID>/<REGION>/<FUNCTION_NAME>
+    const chatFunctionEndpoint = `https://us-central1-${projectId}.cloudfunctions.net/chatWithTharinduAI`; // Ensure region matches your function deployment
+
+
+    // Chat history for Gemini API
+    let chatHistory = [
+      { role: "user", parts: [{ text: `You are Tharindu Lakshan's AI Assistant. Provide information about Tharindu Lakshan based solely on his portfolio data. Be concise and professional. Do not invent information. If you cannot answer a question based on the provided information, politely state that the information is not available in Tharindu's profile. Prioritize direct answers. Respond in a helpful and professional tone.` }] },
+      { role: "model", parts: [{ text: "Hello! I'm Tharindu's AI Assistant. How can I help you today? You can ask me about his skills, experience, projects, or how to contact him." }] }
+    ];
+
+    if (chatbotToggleBtn && chatbotModal && chatbotCloseBtn && chatbotInput && chatbotSendBtn && chatbotBody) {
+      chatbotToggleBtn.addEventListener('click', () => {
+        chatbotModal.classList.toggle('open');
+        chatbotToggleBtn.classList.toggle('hidden');
+        if (chatbotModal.classList.contains('open')) {
+            chatbotInput.focus();
+        }
+      });
+
+      chatbotCloseBtn.addEventListener('click', () => {
+        chatbotModal.classList.remove('open');
+        chatbotToggleBtn.classList.remove('hidden');
+      });
+
+      const appendMessage = (sender, text) => {
+          const msgDiv = document.createElement('div');
+          msgDiv.classList.add('chat-message', sender);
+          msgDiv.textContent = text;
+          chatbotBody.appendChild(msgDiv);
+          chatbotBody.scrollTop = chatbotBody.scrollHeight; // Scroll to bottom
+      };
+
+      const sendMessage = async (messageText) => {
+        const userMessage = messageText || chatbotInput.value.trim();
+        if (!userMessage) return;
+
+        appendMessage('user', userMessage);
+        // Add user message to history, removing initial system instruction for sending to function
+        const historyToSend = chatHistory.slice(1); // Exclude the initial system instruction from actual chat history sent
+        historyToSend.push({ role: "user", parts: [{ text: userMessage }] });
+
+
+        chatbotInput.value = ''; // Clear input
+        chatbotSendBtn.disabled = true; // Disable send button
+        chatbotInput.placeholder = 'Thinking...';
+
+        // Add loading indicator
+        const loadingDiv = document.createElement('div');
+        loadingDiv.classList.add('chat-message', 'bot', 'loading-indicator');
+        loadingDiv.textContent = 'Typing...';
+        chatbotBody.appendChild(loadingDiv);
+        chatbotBody.scrollTop = chatbotBody.scrollHeight;
+
+        try {
+            // Call the Firebase Cloud Function endpoint
+            console.log('Chatbot: Sending request to Cloud Function:', chatFunctionEndpoint);
+            const response = await fetch(chatFunctionEndpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chatHistory: historyToSend }) // Send the chat history to the function
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json(); // Functions often return JSON errors
+                console.error('Chatbot: Cloud Function HTTP Error:', response.status, response.statusText, 'Function Response:', errorData);
+                appendMessage('bot', `Function Error: ${errorData.message || 'Unknown error from Cloud Function'}. Please check your Firebase Function logs.`);
+                throw new Error(`Cloud Function call failed: ${response.status} ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            console.log('Chatbot: Received successful response from Cloud Function:', result);
+            
+            // Remove loading indicator
+            if (chatbotBody.contains(loadingDiv)) {
+                chatbotBody.removeChild(loadingDiv);
+            }
+
+            if (result.botResponse) { // Expecting 'botResponse' from the Cloud Function
+                const botResponse = result.botResponse;
+                appendMessage('bot', botResponse);
+                chatHistory.push({ role: "model", parts: [{ text: botResponse }] }); // Add bot's response to history
+            } else {
+                appendMessage('bot', "I apologize, but I couldn't get a proper response from the AI. The function might be misconfigured. Please check Cloud Function logs.");
+                console.warn('Chatbot: Cloud Function returned unexpected or empty content:', result);
+            }
+        } catch (error) {
+            console.error('Chatbot: Final catch - Error during Cloud Function call:', error);
+            // Remove loading indicator if still present
+            if (chatbotBody.contains(loadingDiv)) {
+                chatbotBody.removeChild(loadingDiv);
+            }
+            const lastMessage = chatbotBody.lastElementChild;
+            if (!lastMessage || !(lastMessage.classList.contains('bot') && (lastMessage.textContent.includes('Function Error:') || lastMessage.textContent.includes('Network error')))) {
+                 appendMessage('bot', 'A network error occurred while reaching the AI. Please check your internet connection and the Cloud Function.');
+            }
+        } finally {
+            chatbotSendBtn.disabled = false; // Re-enable send button
+            chatbotInput.placeholder = 'Type your message...';
+            chatbotInput.focus();
+        }
+      };
+
+      // Function to send a suggested message (called from onclick)
+      window.sendSuggestedMessage = (text) => {
+          chatbotInput.value = text;
+          sendMessage(text);
+      };
+
+      chatbotSendBtn.addEventListener('click', () => sendMessage());
+      chatbotInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          sendMessage();
+        }
+      });
+    }
+
+    // Scroll-to-top button functionality
+    const scrollToTopBtn = document.getElementById('scroll-to-top-btn');
+
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 300) { // Show button after scrolling 300px
+            scrollToTopBtn.classList.add('show');
+        } else {
+            scrollToTopBtn.classList.remove('show');
+        }
+    });
+
+    scrollToTopBtn.addEventListener('click', () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+
 </script>
+
 </body>
 </html>
