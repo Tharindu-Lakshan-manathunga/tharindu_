@@ -113,7 +113,7 @@ ${tharinduKnowledgeText}`
       },
     });
 
-    // Send the last user message to the model
+    // Send the last user message to the mod
     const lastUserMessage = userChatHistory[userChatHistory.length - 1].parts[0].text;
     const result = await chat.sendMessage(lastUserMessage);
     const responseText = result.response.text();
