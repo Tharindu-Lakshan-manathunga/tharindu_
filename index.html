@@ -131,13 +131,9 @@
     </div>
   </nav>
 
-  <!-- Hero Section - Intro & Typing Effect with Background Video -->
+  <!-- Hero Section - Intro & Typing Effect with Canvas Background Animation -->
   <section id="hero" class="hero-section">
-    <!-- Background Video -->
-    <video autoplay loop muted playsinline class="hero-background-video">
-      <source src="https://assets.coverr.co/videos/mp4/Abstract_Blue_Flares.mp4" type="video/mp4">
-      Your browser does not support the video tag.
-    </video>
+    <canvas id="hero-background-canvas" class="hero-background-canvas"></canvas>
     <div class="container hero-content">
       <h1 class="animate-hero-text">Hello, I'm <span class="name">Tharindu Lakshan</span></h1>
       <h2 class="animate-hero-text">
@@ -152,7 +148,7 @@
   <!-- About Me Section -->
   <section id="about" class="about-section reveal">
     <div class="container about-content">
-      <!-- Profile Image - Dynamic layered glitch design with new shape -->
+      <!-- Profile Image - Dynamic layered glitch design -->
       <div class="about-image-glitch-wrapper">
         <div class="about-image-glitch-container">
             <img src="tharindu_db-updated.png" alt="Tharindu Lakshan Profile Picture" class="profile-main-image" />
@@ -638,11 +634,10 @@
       const preloader = document.getElementById('preloader');
       if (preloader) {
         preloader.classList.add('fade-out');
-        // Fallback: Ensure preloader hides after a fixed time even if load event is delayed by assets
         setTimeout(() => {
           preloader.style.display = 'none';
           document.body.style.overflow = ''; // Re-enable scrolling
-        }, 3000); // Hide after 3 seconds, regardless of all assets loading
+        }, 600); // Duration matches CSS transition
       }
     });
 
@@ -706,6 +701,114 @@
         updateThemeIcon('dark');
       }
     });
+
+    // Canvas Background Animation for Hero Section
+    const canvas = document.getElementById('hero-background-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    const maxParticles = 100;
+    const minDistance = 100; // Distance to draw lines
+    const maxLineOpacity = 0.2; // Max opacity for lines
+    const particleSpeed = 0.3;
+
+    // Adjust canvas size to fit window
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        // Reinitialize particles on resize to prevent weird stretching
+        initParticles();
+    }
+
+    // Particle constructor
+    function Particle(x, y) {
+        this.x = x || Math.random() * canvas.width;
+        this.y = y || Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * particleSpeed * 2; // -particleSpeed to particleSpeed
+        this.vy = (Math.random() - 0.5) * particleSpeed * 2;
+        this.radius = Math.random() * 1.5 + 0.5; // Small particle size
+        this.color = 'var(--color-accent-primary)'; // Use CSS variable
+        this.glowColor = 'var(--color-accent-secondary)'; // Cyan for glow
+    }
+
+    // Draw particle
+    Particle.prototype.draw = function() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        
+        // Add subtle glow
+        ctx.shadowBlur = this.radius * 5; // Adjust glow intensity
+        ctx.shadowColor = this.glowColor;
+        
+        ctx.fill();
+        ctx.shadowBlur = 0; // Reset shadow for next draws
+    };
+
+    // Update particle position
+    Particle.prototype.update = function() {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Bounce off edges
+        if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+        if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+    };
+
+    function initParticles() {
+        particles = []; // Clear existing particles
+        for (let i = 0; i < maxParticles; i++) {
+            particles.push(new Particle());
+        }
+    }
+
+    function animateParticles() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+
+        // Store current theme colors for drawing
+        const theme = document.body.getAttribute('data-theme');
+        const accentPrimary = getComputedStyle(document.documentElement).getPropertyValue('--color-accent-primary');
+        const accentSecondary = getComputedStyle(document.documentElement).getPropertyValue('--color-accent-secondary');
+        const tertiaryDark = getComputedStyle(document.documentElement).getPropertyValue('--color-tertiary-dark');
+
+
+        // Update and draw particles
+        for (let i = 0; i < particles.length; i++) {
+            particles[i].update();
+            particles[i].draw();
+            particles[i].color = accentPrimary; // Update color dynamically
+            particles[i].glowColor = accentSecondary;
+        }
+
+        // Draw lines between close particles
+        for (let i = 0; i < particles.length; i++) {
+            for (let j = i; j < particles.length; j++) {
+                const p1 = particles[i];
+                const p2 = particles[j];
+                const distance = Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+
+                if (distance < minDistance) {
+                    const opacity = maxLineOpacity * (1 - distance / minDistance);
+                    ctx.beginPath();
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(p2.x, p2.y);
+                    ctx.strokeStyle = `rgba(65, 105, 225, ${opacity})`; // Royal Blue lines
+                    ctx.lineWidth = 1;
+                    ctx.shadowBlur = 5;
+                    ctx.shadowColor = accentSecondary; // Cyan glow for lines
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                }
+            }
+        }
+        requestAnimationFrame(animateParticles);
+    }
+
+    // Initialize and start animation
+    window.addEventListener('load', () => {
+        resizeCanvas();
+        animateParticles();
+    });
+    window.addEventListener('resize', resizeCanvas);
 
 
     // Testimonials Carousel
@@ -1107,7 +1210,7 @@
         });
     }
 
-    // Chatbot Modal Functionality (with Firebase Cloud Function Integration)
+    // Chatbot Modal Functionality (with Gemini API Integration)
     const chatbotToggleBtn = document.getElementById('chatbot-toggle-btn');
     const chatbotModal = document.getElementById('chatbot-modal');
     const chatbotCloseBtn = document.querySelector('.chatbot-close-btn');
@@ -1115,19 +1218,51 @@
     const chatbotSendBtn = document.getElementById('chatbot-send-btn');
     const chatbotBody = document.getElementById('chatbot-body');
 
-    // IMPORTANT: REPLACE WITH YOUR ACTUAL FIREBASE PROJECT ID
-    // Example: const projectId = "your-firebase-project-id";
-    const projectId = "aboutme-7847c"; // Replace with your Firebase Project ID
+    // Tharindu's Portfolio Knowledge Base (for the AI, as plain text for easier LLM consumption)
+    const tharinduKnowledgeText = `
+    Tharindu Lakshan is a System Support Engineer and a Computer Systems & Network Engineering Undergraduate from SLIIT.
+    His key professional experience includes:
+    - System Support Engineer at Epic Lanka Pvt Ltd (Apr 2024 – Present): Contributes to maintaining and enhancing production environments, working on mission-critical systems, managing Linux/Windows servers, containerizing applications with Docker, maintaining MySQL/PostgreSQL/MongoDB databases, automating monitoring, and resolving real-time issues.
+    - DevOps Intern at TechWave Innovations (Jan 2024 – Mar 2024): Contributed to DevOps pipeline automation, server configuration, built CI/CD pipelines (Jenkins, GitHub Actions), deployed VPS server for Java REST/Flutter Web apps, assisted Docker workflows.
 
-    // Cloud Function Endpoint - THIS WILL BE YOUR CLOUD FUNCTION'S HTTP TRIGGER URL
-    // Format: https://<REGION>-<PROJECT_ID>.cloudfunctions.net/<FUNCTION_NAME>
-    // For local testing: http://localhost:5001/<PROJECT_ID>/<REGION>/<FUNCTION_NAME>
-    const chatFunctionEndpoint = `https://us-central1-${projectId}.cloudfunctions.net/chatWithTharinduAI`; // Ensure region matches your function deployment
+    Tharindu's key skills include:
+    - Cloud Platforms: AWS, Azure, OCI
+    - DevOps Tools: Docker, Jenkins, Ansible, Git
+    - Operating Systems: Linux (Ubuntu, CentOS, RHEL), Windows Server
+    - Monitoring: Grafana, Prometheus, Netdata
+    - Databases: MySQL, PostgreSQL, MongoDB, Oracle, Percona Extradb Cluster
+    - Security & Networking: Samba AD, ProxySQL, Load Balancing, HAProxy
+    - Programming & Scripting: Bash, Python, SQL, C
 
+    Tharindu's notable projects include:
+    - NFV Demonstration with Socket Programming in C
+    - Samba Active Directory Deployment
+    - Oracle 12c Cloud-Based DB Setup
+    - Monitoring of Microservices, Application Servers, and Databases
+    - Multi-Tier Environment for DOXMATE
+    - DevOps CI/CD Pipeline Automation
+    - Mission-Critical Gov System Support
+    - High Availability with ProxySQL
+    - CI/CD for Microservices
+    - Aqua Sync-Tech Smart Water Meter Billing and Monitoring with Mobile Application
+    - Final Year Research Project - AgrySense360
 
-    // Chat history for Gemini API
+    You can contact Tharindu Lakshan via:
+    - Email: tharindulakshan.dev@gmail.com
+    - Phone: +94 71 889 0601
+    - Location: Galle, Sri Lanka
+    - GitHub: https://github.com/Tharindu-Lakshan-manathunga
+    - LinkedIn: https://linkedin.com/in/tharindulakshanmanathunga
+    - Stack Overflow: [Please replace with actual Stack Overflow ID if available]
+    - Medium: https://medium.com/@tharindulakshan.dev
+
+    If a user asks about anything not covered here, state that the information is not available in Tharindu's profile. Prioritize direct answers based on this information. Respond in a helpful and professional tone.
+    `;
+
+    // Chat history for Gemini API (initialize with a system instruction)
     let chatHistory = [
-      { role: "user", parts: [{ text: `You are Tharindu Lakshan's AI Assistant. Provide information about Tharindu Lakshan based solely on his portfolio data. Be concise and professional. Do not invent information. If you cannot answer a question based on the provided information, politely state that the information is not available in Tharindu's profile. Prioritize direct answers. Respond in a helpful and professional tone.` }] },
+      { role: "user", parts: [{ text: `You are Tharindu Lakshan's AI Assistant. Provide information about Tharindu Lakshan based solely on the following knowledge base. Be concise and professional. Do not invent information. If you cannot answer a question based on this knowledge, politely state that the information is not available in Tharindu's profile. Prioritize direct answers based on this information. Respond in a helpful and professional tone.
+      ${tharinduKnowledgeText}` }] },
       { role: "model", parts: [{ text: "Hello! I'm Tharindu's AI Assistant. How can I help you today? You can ask me about his skills, experience, projects, or how to contact him." }] }
     ];
 
@@ -1158,10 +1293,7 @@
         if (!userMessage) return;
 
         appendMessage('user', userMessage);
-        // Add user message to history, removing initial system instruction for sending to function
-        const historyToSend = chatHistory.slice(1); // Exclude the initial system instruction from actual chat history sent
-        historyToSend.push({ role: "user", parts: [{ text: userMessage }] });
-
+        chatHistory.push({ role: "user", parts: [{ text: userMessage }] });
 
         chatbotInput.value = ''; // Clear input
         chatbotSendBtn.disabled = true; // Disable send button
@@ -1175,47 +1307,68 @@
         chatbotBody.scrollTop = chatbotBody.scrollHeight;
 
         try {
-            // Call the Firebase Cloud Function endpoint
-            console.log('Chatbot: Sending request to Cloud Function:', chatFunctionEndpoint);
-            const response = await fetch(chatFunctionEndpoint, {
+            const payload = { 
+                contents: chatHistory,
+                generationConfig: {
+                    temperature: 0.7, // Adjust creativity
+                    topK: 40,
+                    topP: 0.95,
+                    maxOutputTokens: 200 // Limit response length
+                }
+            };
+            // IMPORTANT: For Canvas environment, leave apiKey as an empty string.
+            // Canvas will automatically provide the API key at runtime.
+            // DO NOT insert your actual API key here unless explicitly instructed for a different environment.
+            const apiKey = ""; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            console.log('Chatbot: Sending payload to Gemini API:', JSON.stringify(payload)); // Debugging log
+
+            const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chatHistory: historyToSend }) // Send the chat history to the function
+                body: JSON.stringify(payload)
             });
 
             if (!response.ok) {
-                const errorData = await response.json(); // Functions often return JSON errors
-                console.error('Chatbot: Cloud Function HTTP Error:', response.status, response.statusText, 'Function Response:', errorData);
-                appendMessage('bot', `Function Error: ${errorData.message || 'Unknown error from Cloud Function'}. Please check your Firebase Function logs.`);
-                throw new Error(`Cloud Function call failed: ${response.status} ${response.statusText}`);
+                const errorText = await response.text(); // Get raw text for more info
+                console.error('Chatbot: Gemini API HTTP Error:', response.status, response.statusText, 'Response Body:', errorText);
+                // Attempt to parse JSON if it looks like JSON
+                try {
+                    const errorData = JSON.parse(errorText);
+                    console.error('Chatbot: Gemini API detailed error data:', errorData);
+                    throw new Error(`API error: ${response.status} ${response.statusText} - ${errorData.error ? errorData.error.message : 'Unknown API error'}`);
+                } catch (jsonParseError) {
+                    throw new Error(`API error: ${response.status} ${response.statusText} - ${errorText}`);
+                }
             }
 
             const result = await response.json();
-            console.log('Chatbot: Received successful response from Cloud Function:', result);
+            console.log('Chatbot: Received successful response from Gemini API:', result); // Debugging log
             
             // Remove loading indicator
             if (chatbotBody.contains(loadingDiv)) {
                 chatbotBody.removeChild(loadingDiv);
             }
 
-            if (result.botResponse) { // Expecting 'botResponse' from the Cloud Function
-                const botResponse = result.botResponse;
+            if (result.candidates && result.candidates.length > 0 &&
+                result.candidates[0].content && result.candidates[0].content.parts &&
+                result.candidates[0].content.parts.length > 0) {
+                const botResponse = result.candidates[0].content.parts[0].text;
+                
                 appendMessage('bot', botResponse);
-                chatHistory.push({ role: "model", parts: [{ text: botResponse }] }); // Add bot's response to history
+                chatHistory.push({ role: "model", parts: [{ text: botResponse }] });
             } else {
-                appendMessage('bot', "I apologize, but I couldn't get a proper response from the AI. The function might be misconfigured. Please check Cloud Function logs.");
-                console.warn('Chatbot: Cloud Function returned unexpected or empty content:', result);
+                appendMessage('bot', "I apologize, but I couldn't generate a response for that. Please try rephrasing your question or ask about Tharindu's skills, experience, or projects.");
+                console.warn('Chatbot: Gemini API returned an unexpected response structure or empty content:', result);
             }
         } catch (error) {
-            console.error('Chatbot: Final catch - Error during Cloud Function call:', error);
+            console.error('Chatbot: Error calling Gemini API:', error);
             // Remove loading indicator if still present
             if (chatbotBody.contains(loadingDiv)) {
                 chatbotBody.removeChild(loadingDiv);
             }
-            const lastMessage = chatbotBody.lastElementChild;
-            if (!lastMessage || !(lastMessage.classList.contains('bot') && (lastMessage.textContent.includes('Function Error:') || lastMessage.textContent.includes('Network error')))) {
-                 appendMessage('bot', 'A network error occurred while reaching the AI. Please check your internet connection and the Cloud Function.');
-            }
+            appendMessage('bot', 'A network error or API issue occurred. Please check your connection and try again.');
         } finally {
             chatbotSendBtn.disabled = false; // Re-enable send button
             chatbotInput.placeholder = 'Type your message...';
