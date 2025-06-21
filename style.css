@@ -1827,7 +1827,7 @@ body[data-theme='light'] .footer-section {
     }
 }
 
-@media(max-width: 480px) { /* Small screens (mobile)
+@media(max-width: 480px) { /* Small screens (mobile) */
     .hero-content h1 { font-size: 2.8rem; }
     .hero-content h2 { font-size: 1.4rem; }
     .btn-primary { padding: 12px 28px; font-size: 1.1rem; }
