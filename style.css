@@ -447,79 +447,71 @@ body[data-theme='light'] .section-title {
 
 /* About Section */
 .about-section {
-    padding: 90px 0;
     background: var(--color-secondary-dark);
-    color: var(--color-text-light);
 }
-.about-content {
-    display: flex;
-    align-items: center;
-    gap: 55px;
-    flex-wrap: wrap;
-}
-/* About Image - Advanced Glitch Frame */
-.about-image-glitch-wrapper {
-    position: relative;
-    width: 350px; /* Overall wrapper size for hover effect */
-    height: 350px;
-    margin: 0 auto;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transform-style: preserve-3d;
-    perspective: 1000px;
-    overflow: visible; /* Allow glow to extend */
+body[data-theme='light'] .about-section {
+    background: var(--light-secondary-bg);
 }
 
-.about-image-glitch-container {
+.about-content {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 60px;
+    justify-content: center;
+}
+
+.about-image-glitch-wrapper {
     position: relative;
-    width: 300px; /* Actual image frame size */
-    height: 300px;
-    background-color: var(--color-primary-dark); /* Background color for empty parts of shape */
-    clip-path: polygon(15% 0%, 100% 0%, 85% 100%, 0% 100%); /* Sharp, modern shape */
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    overflow: hidden;
+    box-shadow: 0 0 0 6px rgba(65, 105, 225, 0.4), /* Primary accent border */
+                0 0 0 12px rgba(0, 255, 255, 0.2); /* Secondary accent outer border */
+    animation: pulseBorder 2s infinite alternate;
+}
+
+@keyframes pulseBorder {
+    from {
+        box-shadow: 0 0 0 6px rgba(65, 105, 225, 0.4),
+                    0 0 0 12px rgba(0, 255, 255, 0.2);
+    }
+    to {
+        box-shadow: 0 0 0 8px rgba(65, 105, 225, 0.6),
+                    0 0 0 16px rgba(0, 255, 255, 0.3);
+    }
+}
+
+
+.about-image-glitch-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: calc(100% - 12px); /* Space for inner border visual */
+    height: calc(100% - 12px);
+    border-radius: 50%;
+    overflow: hidden;
+    background-color: var(--color-tertiary-dark);
     display: flex;
     justify-content: center;
     align-items: center;
-    border: 3px solid var(--color-accent-primary); /* Primary border */
-    box-shadow: 0 0 15px rgba(0,0,0,0.7), 0 0 25px var(--shadow-accent); /* Main shadow with accent glow */
-    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Smooth cubic transition */
-    transform: rotateZ(0deg) scale(1);
-    z-index: 2; /* Ensures it's above glitch lines */
+    border: 3px solid var(--color-accent-primary);
 }
 
 .about-image-glitch-container .profile-main-image {
-    width: calc(100% - 6px); /* Image fills within border */
-    height: calc(100% - 6px);
-    object-fit: cover;
-    clip-path: inherit; /* Inherit shape from parent */
-    transform: scale(0.98); /* Slightly smaller to show inner frame */
-    filter: brightness(0.9) grayscale(0.2); /* Subtle initial filter */
-    transition: transform 0.4s, filter 0.4s;
+    width: 100%; /* Ensure image fills container */
+    height: 100%; /* Ensure image fills container */
+    object-fit: cover; /* Crop image to cover the area */
+    border-radius: 50%;
+    display: block;
+    filter: grayscale(20%) brightness(85%);
+    transition: filter 0.3s ease;
 }
 
-/* Glitch Lines (Pseudo-elements for the effect) */
-.about-image-glitch-container::before,
-.about-image-glitch-container::after {
-    content: '';
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    clip-path: inherit;
-    background: linear-gradient(45deg, transparent, var(--color-accent-secondary), transparent);
-    opacity: 0; /* Hidden by default */
-    transition: opacity 0.3s ease, transform 0.3s ease;
-    z-index: 1; /* Below image, above background */
-}
-
-.about-image-glitch-container::before {
-    transform: translate(-6px, -6px) rotate(-3deg);
-    box-shadow: 0 0 10px var(--shadow-accent-secondary);
-}
-
-.about-image-glitch-container::after {
-    transform: translate(6px, 6px) rotate(3deg);
-    box-shadow: 0 0 10px var(--shadow-accent-secondary);
-    filter: hue-rotate(90deg); /* Slightly different color for variety */
+.about-image-glitch-container:hover .profile-main-image {
+    filter: grayscale(0%) brightness(100%);
 }
 
 /* Overlay for scanline/static effect */
