@@ -26,7 +26,7 @@
     --light-card-bg: #E7E9ED;
     --light-text-dark: #333333;
     --light-text-medium: #555555;
-    --light-border: #D0D3D9; 
+    --light-border: #D0D3D9;
     --light-shadow: rgba(0, 0, 0, 0.15);
 }
 
@@ -151,13 +151,13 @@ body[data-theme='light'] .navbar {
     border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
-/* Navbarbbbb scrolled state */
+/* Navbar scrolled state */
 .navbar.scrolled {
     background: var(--color-secondary-dark); /* Solid background when scrolled */
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6); /* More prominent shadow */
     border-bottom-color: var(--color-accent-primary); /* Accent border */
 }
-    
+
 body[data-theme='light'] .navbar.scrolled {
     background: var(--light-card-bg);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
@@ -387,7 +387,6 @@ body[data-theme='light'] .hero-background-canvas {
 .hero-content {
     position: relative;
     z-index: 2; /* Above video and canvas */
-    z-index: 2;
     max-width: 800px; /* Limit content width */
 }
 
