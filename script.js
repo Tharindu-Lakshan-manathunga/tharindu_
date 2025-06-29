@@ -478,7 +478,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return "The best way to contact Tharindu is via **email at tharindulakshan@example.com** or through the <a href='#contact' onclick='window.sendSuggestedMessage(\"how can I contact Tharindu?\")'>Contact Form</a> directly on the website. He's also active on LinkedIn!";
             }
 
-            // --- General Responses ---
+            // --- General Responses ---//
             if (message.includes('hello') || message.includes('hi') || message.includes('hey') || message.includes('greetings')) {
                 return "Hello there! How can I assist you with Tharindu's professional portfolio today? Feel free to ask about his background, projects, or how to connect. I'm here to help!";
             } else if (message.includes('experience') || message.includes('work history') || message.includes('jobs') || message.includes('past work') || message.includes('employment') || message.includes('career')) {
