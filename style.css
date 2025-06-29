@@ -185,7 +185,7 @@ body[data-theme='light'] .navbar {
 >>>>>>> e1875ca21aa492b9760c53dac0fe6ebc225cc349
 }
 
-/* Navbar scrolled state */
+/* Navbarbbbb scrolled state */
 .navbar.scrolled {
     background: var(--color-secondary-dark); /* Solid background when scrolled */
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6); /* More prominent shadow */
@@ -194,7 +194,7 @@ body[data-theme='light'] .navbar {
 =======
 >>>>>>> e1875ca21aa492b9760c53dac0fe6ebc225cc349
 }
-
+    
 body[data-theme='light'] .navbar.scrolled {
     background: var(--light-card-bg);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
