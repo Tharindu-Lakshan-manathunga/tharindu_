@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Tharindu Lakshan - Associate Engineer Portfolio</title>
+
+  <meta name="description" content="Tharindu Lakshan - Associate System Support Engineer & Final Year CSNE Undergraduate. Expert in Linux, DevOps, Cloud (AWS, Azure), and production-grade deployments." />
+  <meta name="keywords" content="Associate Engineer, DevOps, Tharindu Lakshan, SLIIT, EPIC Lanka, Docker, Kubernetes, Linux, AWS, Azure, CI/CD, Cloud" />
+
+  <link rel="stylesheet" href="style.css" />
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+  <script src="https://unpkg.com/typed.js@2.1.0/dist/typed.umd.js"></script>
+  <!-- Three.js for advanced 3D effects on canvas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- Firebase scripts for page view counter and authentication -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { 
+      getAuth, signInAnonymously, signInWithCustomToken, 
+      createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged 
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    let app, db, auth;
+    let currentUserId = null; // To store the authenticated or anonymous user ID
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        // Firebase configuration - REPLACE THESE PLACEHOLDERS WITH YOUR ACTUAL VALUES
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+          apiKey: "AIzaSyBrKxbLTDgXyZ4H16yRa5wcULfBSJdHONc",
+          authDomain: "tharindu-lakshan-portfolio.firebaseapp.com",
+          projectId: "tharindu-lakshan-portfolio",
+          storageBucket: "tharindu-lakshan-portfolio.firebasestorage.app",
+          messagingSenderId: "239343471618",
+          appId: "1:239343471618:web:35cf790c42d39d68b86b1b",
+          measurementId: "G-YGK77RQC01"
+        };
+        
+        // This appId will be used for the Firestore path
+        // For local/Netlify, it uses the appId from your firebaseConfig.
+        // For Canvas, it uses the Canvas-provided __app_id.
+        const appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.appId;
+        console.log("Firebase App ID being used:", appId);
+
+        // Only initialize Firebase if a valid config is provided
+        if (firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.projectId !== "YOUR_FIREBASE_PROJECT_ID") {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+
+            // Listen for auth state changes (login, logout, anonymous sign-in)
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    // User is signed in (could be anonymous or email/password)
+                    currentUserId = user.uid;
+                    const userEmail = user.email || 'anonymous';
+                    console.log("Authenticated User ID:", currentUserId);
+                    console.log("Authenticated User Email:", userEmail);
+
+                    const userIdDisplayElement = document.getElementById('user-id-display');
+                    if (userIdDisplayElement) {
+                        userIdDisplayElement.textContent = `Visitor ID: ${currentUserId.substring(0, 8)}... (${userEmail})`;
+                    }
+
+                    // Update UI for logged-in state
+                    const loginButton = document.getElementById('login-btn');
+                    const logoutButton = document.getElementById('logout-btn');
+                    if (loginButton) loginButton.style.display = 'none';
+                    if (logoutButton) logoutButton.style.display = 'block';
+
+                } else {
+                    // User is signed out or not yet signed in. Attempt anonymous sign-in.
+                    currentUserId = crypto.randomUUID(); // Fallback for pre-auth user ID
+                    console.log("No authenticated user. Attempting anonymous sign-in or using temp ID.");
+
+                    try {
+                        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                            console.log("Firebase authenticated with custom token (Canvas environment).");
+                            currentUserId = auth.currentUser.uid; // Update to actual UID from Canvas auth
+                        } else {
+                            // Only sign in anonymously if not already authenticated by custom token
+                            if (!auth.currentUser || auth.currentUser.isAnonymous) {
+                                await signInAnonymously(auth);
+                                console.log("Firebase authenticated anonymously.");
+                                currentUserId = auth.currentUser.uid; // Update to actual anonymous UID
+                            }
+                        }
+                    } catch (error) {
+                        console.error("Error during anonymous sign-in:", error);
+                        // If anonymous sign-in fails, currentUserId remains a temporary UUID
+                    }
+
+                    // Update UI for logged-out state
+                    const loginButton = document.getElementById('login-btn');
+                    const logoutButton = document.getElementById('logout-btn');
+                    if (loginButton) loginButton.style.display = 'block';
+                    if (logoutButton) logoutButton.style.display = 'none';
+                }
+
+                // AFTER authentication state is determined, log page view
+                if (currentUserId) { // Ensure we have a user ID before logging
+                    const pageViewsDocRef = doc(db, `artifacts/${appId}/public/data/website_analytics/page_views`);
+                    await setDoc(pageViewsDocRef, {
+                        count: increment(1),
+                        lastViewedAt: new Date(),
+                        lastViewedBy: currentUserId, // Log the current (auth or anonymous) user ID
+                        lastViewedByEmail: auth.currentUser?.email || 'anonymous', // Log email if available
+                        userAgent: navigator.userAgent,
+                        referrer: document.referrer || 'direct'
+                    }, { merge: true });
+                    const docSnap = await getDoc(pageViewsDocRef);
+                    if (docSnap.exists()) {
+                        console.log(`Current Website Views: ${docSnap.data().count}`);
+                    } else {
+                        console.log("Page views counter initialized in Firestore.");
+                    }
+                }
+            });
+
+            // Make auth functions globally accessible for the forms
+            window.firebaseAuth = {
+                createUserWithEmailAndPassword,
+                signInWithEmailAndPassword,
+                signOut,
+                auth // Pass the auth instance
+            };
+
+        } else {
+            console.warn("Firebase configuration incomplete or not provided. Firebase Auth and page view counter will not function.");
+        }
+      } catch (error) {
+        console.error("Error initializing Firebase:", error);
+      }
+    });
+  </script>
+  <!-- Link to the main JavaScript file for all interactions and animations -->
+  <script src="script.js" defer></script>
+</head>
+<body data-theme="dark">
+  <!-- Preloader for a smooth loading experience -->
+  <div id="preloader">
+    <div class="loader"></div>
+  </div>
+
+  <!-- Main Navigation Bar -->
+  <nav class="navbar">
+    <div class="container">
+      <!-- Theme Toggle Button -->
+      <button id="theme-toggle-btn" class="theme-toggle-btn" aria-label="Toggle dark and light theme">
+        <i class="fas fa-sun"></i> <i class="fas fa-moon"></i>
+      </button>
+
+      <div class="logo">Tharindu</div>
+
+      <!-- Navigation Links -->
+      <ul class="nav-links">
+        <li><a href="#hero" class="nav-link active">Home</a></li>
+        <li><a href="#about" class="nav-link">About</a></li>
+        <li><a href="#projects" class="nav-link">Projects</a></li>
+        <li><a href="#achievements" class="nav-link">Achievements</a></li>
+        <li><a href="#experience" class="nav-link">Experience</a></li>
+        <li><a href="#skills" class="nav-link">Skills</a></li>
+        <li><a href="#services" class="nav-link">Services</a></li>
+        <li><a href="#interactive-showcase" class="nav-link">Showcase</a></li>
+        <li><a href="#cv" class="nav-link">CV</a></li>
+        <li><a href="#testimonials" class="nav-link">Testimonials</a></li>
+        <li><a href="#gallery" class="nav-link">Gallery</a></li>
+        <li><a href="#contact" class="nav-link">Contact</a></li>
+      </ul>
+      <!-- Auth Buttons moved to their own container for better layout control -->
+      <div class="nav-auth-buttons">
+        <button id="login-btn" class="nav-link auth-btn">Login / Signup</button>
+        <button id="logout-btn" class="nav-link auth-btn" style="display: none;">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section - First Impression with Video Background -->
+  <section id="hero" class="hero-section">
+    <!-- Background Video: autoplay, loop, playsinline, muted -->
+    <video autoplay loop playsinline muted id="background-video">
+        <source src="/images/144586-785095790.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+    <!-- Canvas for subtle, interactive particle animations using Three.js -->
+    <canvas id="hero-background-canvas" class="hero-background-canvas"></canvas>
+    <div class="container hero-content">
+      <h1 class="animate-hero-text">Hello, I'm <span class="name">Tharindu Lakshan</span></h1>
+      <h2 class="animate-hero-text">
+        <!-- Typed.js will insert dynamic text here -->
+        <span id="typed-text"></span><span class="cursor">|</span>
+      </h2>
+      <p class="animate-hero-text">Associate System Engineer and Computer Systems & Network Engineering Undergraduate with strong skills in DevOps, Linux, Cloud Computing, CI/CD, and IT Infrastructure Automation.</p>
+      <a href="#contact" class="btn-primary animate-hero-button">Connect with Me</a>
+    </div>
+  </section>
+
+  <!-- About Section - Introducing Yourself -->
+  <section id="about" class="about-section reveal">
+    <div class="container about-content">
+      <!-- Profile Image with Glitch/Hover Effect -->
+      <div class="about-image-glitch-wrapper">
+        <div class="about-image-glitch-container">
+            <!-- Replace with your actual profile image -->
+            <img src="/images/tharindu_db-updated.png" alt="Tharindu Lakshan Profile Picture" class="profile-main-image" />
+            <div class="glitch-line line-1"></div>
+            <div class="glitch-line line-2"></div>
+            <div class="glitch-overlay"></div>
+        </div>
+      </div>
+
+      <!-- About Me Text Content -->
+      <div class="about-text">
+        <h2 class="about-title">About Me</h2>
+        <p class="about-paragraph">I'm a results-oriented IT professional with a deep interest in building resilient, scalable, and secure IT systems. At EPIC Lanka, I contributed to key e-government and financial sector deployments, focusing on automation, high availability, and monitoring.</p>
+        <p class="about-paragraph">My academic foundation from SLIIT, combined with real-world DevOps and system administration experience, enables me to engineer efficient solutions across complex infrastructure environments.</p>
+
+        <ul class="about-features">
+          <li class="about-feature-item">
+            <span class="about-feature-icon">🐧</span> Hands-on with Linux, Docker, Jenkins, Databases
+          </li>
+          <li class="about-feature-item">
+            <span class="about-feature-icon">☁️</span> Experience with AWS & Azure platforms
+          </li>
+          <li class="about-feature-item">
+            <span class="about-feature-icon">📈</span> Monitoring via Grafana, Prometheus, Netdata
+          </li>
+          <li class="about-feature-item">
+            <span class="about-feature-icon">💡</span> Passionate about learning, automation, cloud platforms and collaboration
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Projects Section - Showcase Your Work -->
+  <section id="projects" class="projects-section reveal">
+    <div class="container">
+      <h2 class="section-title">Projects</h2>
+
+      <div class="cards-grid">
+        <!-- Project Card 1 -->
+         <div class="card-item">
+          <h3>Final Year Research Project - AgrySense360</h3>
+          <p>Predictive Analytics for Yield Optimization: To forecast crop yields, optimize planting schedules, and enhance productivity.</p>
+          <a href="https://tharindu-lakshan-manathunga.github.io/Agrysense360/" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Details</a>
+        </div>
+        <!-- Project Card 2 -->
+        <div class="card-item">
+          <h3>Samba Active Directory Deployment</h3>
+          <p>Installed and configured Samba as an Active Directory Domain Controller on Linux to manage user authentication and policy-based access control within a mixed OS environment.</p>
+          <p class="technologies"><strong>Technologies:</strong> VMware Workstation, Ubuntu, Windows 10 Pro</p>
+          <a href="https://drive.google.com/drive/folders/1EkvWuNMR3bIntsO2FMrclljnz1oZw6mh?usp=sharing" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Details</a>
+        </div>
+        <!-- Project Card 3 -->
+        <div class="card-item">
+          <h3>Oracle 12c Cloud-Based DB Setup</h3>
+          <p>Deployed Oracle 12c Database on Microsoft Azure, configured PDBs, managed users and implemented backup/recovery and security mechanisms for high availability.</p>
+          <p class="technologies"><strong>Technologies:</strong> Oracle 12c, Azure Cloud, SQL, Windows</p>
+          <a href="https://drive.google.com/drive/folders/1NV7AFb1ROgR6RgcixP0rfgLkSSA0AOUG?usp=sharing" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Details</a>
+        </div>
+        <!-- Project Card 4 -->
+        <div class="card-item">
+          <h3>Hospital Network Simulation</h3>
+          <p>Designed and documented an end-to-end healthcare facility network layout including routing, switching, and security protocols using simulation tools.</p>
+          <p class="technologies"><strong>Technologies:</strong> Cisco Packet Tracer, Networking Fundamentals</p>
+        
+        </div>
+        <!-- Project Card 5 -->
+        <div class="card-item">
+          <h3>Monitoring of Microservices, Application Servers, and Databases</h3>
+          <p>Implemented and visualized system and application metrics for enterprise microservices using Grafana, Prometheus, JMX Exporter, and Node Exporter.</p>
+          <p class="technologies"><strong>Technologies:</strong> Grafana, Prometheus, Node Exporter, JMX Exporter</p>
+          <a href="https://github.com/Tharindu-Lakshan-manathunga/Monitoring.git" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Details</a>
+        </div>
+        <!-- Project Card 6 -->
+        <div class="card-item">
+          <h3>Multi-Tier Environment for DOXMATE</h3>
+          <p>Engineered multi-tier production and UAT environments with NGINX reverse proxies, HAProxy for load balancing, and cluster-based database solutions for critical applications.</p>
+          <p class="technologies"><strong>Technologies:</strong> RHEL 8, Java 8/11, Python, MySQL 5.7, Percona XtraDB Cluster, HAProxy, Apache Tomcat, NFS</p>
+          
+        </div>
+        <!-- Project Card 7 -->
+        <div class="card-item">
+          <h3>DevOps CI/CD Pipeline Automation</h3>
+          <p>Automated build, test, and deployment processes for microservices using Jenkins and Ansible, ensuring rapid delivery and rollback support with containerization tools.</p>
+          <p class="technologies"><strong>Technologies:</strong> Jenkins, Ansible, Docker, Prometheus, Grafana, Git, CentOS 7</p>
+         
+        </div>
+        <!-- Project Card 8 -->
+        <div class="card-item">
+          <h3>Mission-Critical Gov System Support</h3>
+          <p>Configuration, Maintenance, and Issue Resolution of UAT and Live Environments for Mission-Critical Government Projects.
+             (Valuation Department Stamp Duty Opinion System, Business Name Registration System, Coastal Ministry and Ministry of
+               Foreign Affairs Systems - Associated with Epic Lanka)</p>
+          <p class="technologies"><strong>Technologies:</strong> RHEL 8, GlassFish, NGINX, Apache, MySQL, Java, Docker, NFS</p>
+          
+        </div>
+        <!-- Project Card 9 -->
+        <div class="card-item">
+          <h3>High Availability with ProxySQL</h3>
+          <p>Configured ProxySQL in front of a Percona XtraDB Cluster to ensure high-availability, fault tolerance, and transparent failover for production database workloads.</p>
+          <p class="technologies"><strong>Technologies:</strong> ProxySQL, Percona XtraDB Cluster, MySQL, RHEL</p>
+          <a href="https://github.com/Tharindu-Lakshan-manathunga/percona.git" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Details</a>
+        </div>
+        <!-- Project Card 10 -->
+        <div class="card-item">
+          <h3>CI/CD for Microservices</h3>
+          <p>Designed and implemented CI/CD pipelines for 7 backend and 2 frontend services using Jenkins, Docker, Git, and Ansible.</p>
+          <p class="technologies"><strong>Technologies:</strong> Jenkins, Docker, Git, RHEL 8</p>
+          <a href="https://github.com/Tharindu-Lakshan-manathunga/ci-cd.git" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Details</a>
+        </div>
+        <!-- Project Card 11 -->
+        <div class="card-item">
+          <h3>Aqua Sync-Tech Smart Water Meter Billing and Monitoring with Mobile Application</h3>
+          <p>Aqua Sync-Tech is a smart IoT-based water metering system that tracks real-time water usage, detects leaks, and supports remote control. It syncs with a mobile app for easy access by customers and Sri Lanka Water Board staff.</p>
+          <p class="technologies"><strong>Technologies:</strong> NodeMcu, Arduino IDE, Arduino C</p>
+          <a href="https://github.com/Tharindu-Lakshan-manathunga/Aqua-Sync-Tech-Smart-Water-Meter-for-Billing-and-Monitoring-with-Mobile-Application.-.git" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Details</a>
+        </div>
+        <!-- Project Card 12 -->
+        <div class="card-item">
+          <h3>NFV Demonstration with Socket Programming in C</h3>
+          <p>Demonstrated Network Function Virtualization (NFV) using OpenStack and OpenDaylight. Built and simulated VNFs and SDN functions over Ubuntu Server using socket programming for dynamic network operations.</p>
+          <p class="technologies"><strong>Technologies:</strong> Ubuntu Server, OpenStack (NFVOs), OpenDaylight (SDN, VNFs), C</p>
+         
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Achievements Section - Highlight Your Certifications and Accomplishments -->
+  <section id="achievements" class="achievements-section reveal">
+    <div class="container">
+      <h2 class="section-title">Achievements & Certifications</h2>
+      <div class="cards-grid">
+        <div class="card-item">
+          <h3>Introduction to DevOps</h3>
+          <p>Coursera Certificate in DevOps principles and practices.</p>
+          <p class="technologies"><strong>Platform:</strong> Coursera</p>
+          <a href="https://coursera.org/verify/K9CPKJBQG2AQ" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Credential</a>
+        </div>
+        <div class="card-item">
+          <h3>Introduction to Cloud Computing</h3>
+          <p>Foundational certification in cloud concepts.</p>
+          <p class="technologies"><strong>Provider:</strong> Issued by Coursera | Authorized by IBM</p>
+          <a href="https://coursera.org/verify/HSH46GNSHFR9" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Credential</a>
+        </div>
+        <div class="card-item">
+          <h3>Introduction to Linux Commands and Shell Scripting</h3>
+          <p>Issued by Coursera | Authorized by IBM</p>
+          <p class="technologies"><strong>Provider:</strong> Coursera</p>
+          <a href="https://www.coursera.org/account/accomplishments/verify/5642URKQTLZA" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Credential</a>
+        </div>
+        <div class="card-item">
+          <h3>AWS Cloud Technical Essentials</h3>
+          <p>Issued by Coursera | Authorized by AWS</p>
+          <p class="technologies"><strong>Provider:</strong> Coursera</p>
+          <a href="https://coursera.org/verify/JZVQKXPCFJGQ" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Credential</a>
+        </div>
+        <div class="card-item">
+          <h3>Introduction to Containers</h3>
+          <p>Docker, Kubernetes & OpenShift.</p>
+          <p class="technologies"><strong>Provider:</strong> Issued by Coursera | Authorized by IBM</p>
+          <a href="https://coursera.org/verify/5642URKQTLZA" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Credential</a>
+        </div>
+        <div class="card-item">
+          <h3>Oracle OCI Foundations Associate</h3>
+          <p>Oracle Cloud Infrastructure 2023 Certified.</p>
+          <p class="technologies"><strong>Provider:</strong> Oracle</p>
+          <a href="https://catalog-education.oracle.com/pls/certview/sharebadge?id=D4C91D9E6812461D49302B660CEB4E1B7F59B350CD122C86C51536140724527E" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Credential</a>
+        </div>
+        <div class="card-item">
+          <h3>Introduction to Networks</h3>
+          <p>Cisco Networking Academy.</p>
+          <p class="technologies"><strong>Provider:</strong> Cisco</p>
+          <a href="https://www.credly.com/badges/e5b634ba-9350-47a7-85ad-4c4f2b5e6a16/linked_in_profile" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Credential</a>
+        </div>
+        <div class="card-item">
+          <h3>AZ-104: Azure Administrator</h3>
+          <p>Certification demonstrating proficiency in Azure administration.</p>
+          <p class="technologies"><strong>Provider:</strong> KodeKloud</p>
+          <a href="https://learn.kodekloud.com/certificate/7e8274af-d166-4ab8-8430-3a9f5101670c" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Credential</a>
+        </div>
+        <div class="card-item">
+          <h3>Learn Ansible Basics</h3>
+          <p>Certification demonstrating proficiency in Ansible automation.</p>
+          <p class="technologies"><strong>Provider:</strong> KodeKloud</p>
+          <a href="https://learn.kodekloud.com/certificate/8773f796-bd21-4d93-8504-c12d80feeb4a" target="_blank" rel="noopener noreferrer" class="view-details-btn">View Credential</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Experience Section - Your Professional Journey -->
+  <section id="experience" class="experience-section reveal">
+    <div class="container">
+      <h2 class="section-title">Experience</h2>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <h3>Associate System Engineer</h3>
+            <h4>EPIC Lanka (Pvt) Ltd. | Colombo, Sri Lanka</h4>
+            <p class="duration">March 2025 – Present</p>
+            <ul>
+              <li>Manage and optimize Linux and Windows systems in production and UAT environments, ensuring high availability, security, and compliance.</li>
+              <li>Configure and maintain live production environments, supporting e-government projects and financial sector clients.
+Implement security best practices and apply vulnerability fixes, significantly reducing risk and enhancing system resilience.</li>
+              <li>Deploy and administer MySQL, PostgreSQL, and MongoDB databases, ensuring data integrity, privacy, and performance.</li>
+              <li>Configure and maintain database load balancing and high-availability clusters (ProxySQL, Percona XtraDB Cluster) for seamless failover and uninterrupted service.</li>
+              <li>Optimize database and application performance through query tuning, indexing, and resource allocation.</li>
+              <li>Automate backup solutions and streamline package installations, minimizing downtime and manual intervention.</li>
+              <li>Develop and execute Docker images for complex application deployments, enhancing CI/CD pipelines with Jenkins and Ansible.</li>
+              <li>Implement proactive monitoring solutions (Grafana, Prometheus, Netdata) for rapid detection and resolution of system issues.</li>
+              <li>Provided 24/7 technical support for production environments, resolving complex issues efficiently.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <h3>Intern System Engineer</h3>
+            <h4>EPIC Lanka (Pvt) Ltd. | Colombo, Sri Lanka</h4>
+            <p class="duration">April 2024 – March 2025</p>
+            <ul>
+              <li>Assisted in network configuration and troubleshooting for client infrastructure.</li>
+              <li>Supported software deployments and system updates for various business applications.</li>
+              <li>Contributed to documentation of IT procedures and system configurations.</li>
+            </ul>
+          </div>
+        </div>
+        <!-- Add more experience items as needed -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Skills Section - Your Technical Expertise -->
+  <section id="skills" class="skills-section reveal">
+    <div class="container">
+      <h2 class="section-title">Skills</h2>
+      <div class="skills-grid">
+        <div class="skill-card">
+          <div class="skill-icon"><i class="fas fa-server"></i></div>
+          <h3>Operating Systems</h3>
+          <p>Linux (RHEL, Ubuntu, CentOS), Windows Server</p>
+          <div class="skill-bar-container">
+            <div class="skill-bar" data-skill-level="95"></div>
+          </div>
+          <span class="skill-percentage">95%</span>
+        </div>
+        <div class="skill-card">
+          <div class="skill-icon"><i class="fas fa-cogs"></i></div>
+          <h3>DevOps Tools</h3>
+          <p>Docker, Kubernetes, Jenkins, Ansible, Git</p>
+          <div class="skill-bar-container">
+            <div class="skill-bar" data-skill-level="90"></div>
+          </div>
+          <span class="skill-percentage">85%</span>
+        </div>
+        <div class="skill-card">
+          <div class="skill-icon"><i class="fas fa-cloud"></i></div>
+          <h3>Cloud Platforms</h3>
+          <p>AWS, Microsoft Azure</p>
+          <div class="skill-bar-container">
+            <div class="skill-bar" data-skill-level="85"></div>
+          </div>
+          <span class="skill-percentage">80%</span>
+        </div>
+        <div class="skill-card">
+          <div class="skill-icon"><i class="fas fa-database"></i></div>
+          <h3>Databases</h3>
+          <p>MySQL, PostgreSQL, Percona ExtraDB, Oracle 12c</p>
+          <div class="skill-bar-container">
+            <div class="skill-bar" data-skill-level="80"></div>
+          </div>
+          <span class="skill-percentage">85%</span>
+        </div>
+        <div class="skill-card">
+          <div class="skill-icon"><i class="fas fa-code"></i></div>
+          <h3>Scripting & Programming</h3>
+          <p>Shell Scripting, Python, JavaScript</p>
+          <div class="skill-bar-container">
+            <div class="skill-bar" data-skill-level="75"></div>
+          </div>
+          <span class="skill-percentage">75%</span>
+        </div>
+        <div class="skill-card">
+          <div class="skill-icon"><i class="fas fa-network-wired"></i></div>
+          <h3>Networking</h3>
+          <p>TCP/IP, DNS, VPN, Firewalls</p>
+          <div class="skill-bar-container">
+            <div class="skill-bar" data-skill-level="80"></div>
+          </div>
+          <span class="skill-percentage">85%</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Services Section - What I Offer -->
+  <section id="services" class="services-section reveal">
+    <div class="container">
+      <h2 class="section-title">What I Offer</h2>
+      <div class="services-grid">
+        <div class="service-card">
+          <div class="service-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+          <h3>Cloud Infrastructure</h3>
+          <p>Designing, deploying, and managing scalable and secure cloud solutions on AWS and Azure.</p>
+        </div>
+        <div class="service-card">
+          <div class="service-icon"><i class="fas fa-shipping-fast"></i></div>
+          <h3>CI/CD Automation</h3>
+          <p>Implementing automated pipelines for rapid and reliable software delivery using Jenkins and Ansible.</p>
+        </div>
+        <div class="service-card">
+          <div class="service-icon"><i class="fas fa-shield-alt"></i></div>
+          <h3>System Security</h3>
+          <p>Hardening Linux systems, implementing firewalls, and ensuring data integrity and access control.</p>
+        </div>
+        <div class="service-card">
+          <div class="service-icon"><i class="fas fa-database"></i></div>
+          <h3>Database Management</h3>
+          <p>Optimizing and maintaining high-performance MySQL, PostgreSQL, Percona ExtraDB cluster, and Oracle database systems.</p>
+        </div>
+        <div class="service-card">
+          <div class="service-icon"><i class="fas fa-cogs"></i></div>
+          <h3>DevOps Consulting</h3>
+          <p>Providing solutions for integrating DevOps practices into your workflow.</p>
+        </div>
+        <div class="service-card">
+          <div class="service-icon"><i class="fas fa-chart-line"></i></div>
+          <h3>Monitoring & Logging</h3>
+          <p>Setting up comprehensive monitoring solutions with Grafana, Prometheus, and logging tools.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- New Section: Interactive Showcase - Skill & Experience Alignment -->
+  <section id="interactive-showcase" class="interactive-showcase-section reveal">
+    <div class="container">
+      <h2 class="section-title">Skill & Experience Alignment</h2>
+      <div class="showcase-content">
+        <p class="showcase-intro">My expertise isn't just a list of skills; it's how they've been applied to deliver real-world solutions. Here's a glimpse into how my skills align with my professional journey:</p>
+
+        <div class="alignment-grid">
+            <div class="alignment-card">
+                <div class="alignment-icon"><i class="fas fa-chart-network"></i></div>
+                <h3>Network Function Virtualization (NFV)</h3>
+                <p>Applied <strong>C programming</strong> and network fundamentals to simulate VNFs and SDN, directly reflecting my **Software Defined Networking (SDN)** and **Network Engineering** skills from projects like "NFV Demonstration."</p>
+                <span class="skill-tag">C Programming</span>
+                <span class="skill-tag">SDN</span>
+                <span class="skill-tag">Network Eng.</span>
+            </div>
+            <div class="alignment-card">
+                <div class="alignment-icon"><i class="fas fa-cloud-download-alt"></i></div>
+                <h3>Cloud Database Deployment</h3>
+                <p>Leveraged **Azure Cloud** and **Oracle 12c** expertise to deploy and secure high-availability databases, as demonstrated in my "Oracle 12c Cloud-Based DB Setup" project, showcasing **Cloud Computing** and **Database Administration**.</p>
+                <span class="skill-tag">Azure</span>
+                <span class="skill-tag">Oracle DB</span>
+                <span class="skill-tag">DB Admin</span>
+            </div>
+            <div class="alignment-card">
+                <div class="alignment-icon"><i class="fas fa-cubes"></i></div>
+                <h3>CI/CD Pipeline Automation</h3>
+                <p>Utilized **Jenkins**, **Docker**, and **Ansible** to automate microservice deployments, a core part of my role at EPIC Lanka and highlighted in "DevOps CI/CD Pipeline Automation," demonstrating **DevOps** and **Automation** skills.</p>
+                <span class="skill-tag">Jenkins</span>
+                <span class="skill-tag">Docker</span>
+                <span class="skill-tag">Ansible</span>
+            </div>
+             <div class="alignment-card">
+                <div class="alignment-icon"><i class="fas fa-shield-alt"></i></div>
+                <h3>High Availability Solutions</h3>
+                <p>Engineered fault-tolerant systems using **ProxySQL** and **Percona XtraDB Cluster**, critical for mission-critical government systems, showcasing expertise in **Database Architecture** and **System Resilience** from projects like "High Availability with ProxySQL."</p>
+                <span class="skill-tag">ProxySQL</span>
+                <span class="skill-tag">MySQL</span>
+                <span class="skill-tag">System Design</span>
+            </div>
+        </div>
+        <p class="showcase-cta">Each professional experience has deepened my skills and allowed me to contribute effectively to diverse technical challenges.</p>
+        <a href="#experience" class="btn-primary showcase-btn">View Full Experience</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- CV Section - View Your Resume/CV -->
+  <section id="cv" class="cv-section reveal">
+    <div class="container">
+      <h2 class="section-title">My CV</h2>
+      <div class="cv-gallery">
+        <div class="cv-item">
+          <!-- Replace with your actual CV page 1 image (e.g., JPEG, PNG) -->
+          <img src="/images/mycv2.png" alt="Tharindu Lakshan CV Page 1" class="cv-thumbnail" data-full-src="/images/mycv2.png">
+          <p>CV Page 1</p>
+        </div>
+        <div class="cv-item">
+          <!-- Replace with your actual CV page 2 image (e.g., JPEG, PNG) -->
+          <img src="/images/mycv1.png" alt="Tharindu Lakshan CV Page 2" class="cv-thumbnail" data-full-src="/images/mycv1.png">
+          <p>CV Page 2</p>
+        </div>
+        <!-- Add more CV images as needed -->
+      </div>
+      <div class="cv-download">
+        <!-- Replace 'your-cv.pdf' with the actual path to your CV PDF file -->
+        <a href="images/my_cv.pdf" download class="btn-primary">Download Full CV (PDF)</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- CV Modal/Popup Structure -->
+  <div id="cv-modal" class="cv-modal">
+    <div class="cv-modal-content">
+      <span class="cv-modal-close" aria-label="Close CV image">&times;</span>
+      <img id="cv-modal-image" src="" alt="Full CV Image">
+    </div>
+  </div>
+
+  <!-- Testimonials Section - What Others Say About You -->
+  <section id="testimonials" class="testimonials-section reveal">
+    <div class="container">
+      <h2 class="section-title">Testimonials</h2>
+      <div class="testimonials-grid">
+        <div class="testimonial">
+          <p>"Tharindu is a highly dedicated and skilled System Engineer. His problem-solving abilities and commitment to projects are truly commendable. A valuable asset to any team."</p>
+          <div class="testimonial-author"></div>
+        </div>
+        <div class="testimonial">
+          <p>"I had the pleasure of working with Tharindu on several critical deployments. His expertise in Linux and automation significantly streamlined our operations. Highly recommended!"</p>
+          <div class="testimonial-author"></div>
+        </div>
+        <!-- Add more testimonials as needed -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Gallery Section - Image Carousel -->
+  <section id="gallery" class="gallery-section reveal">
+    <div class="container">
+      <h2 class="section-title">Gallery</h2>
+      <div class="gallery-carousel-container">
+        <div class="gallery-carousel-track">
+          <!-- Replace with your actual gallery images and their labels -->
+          <img src="/images/epic_day.jpeg" alt="Epic IST Team Get-together 2025" class="gallery-slide" data-label="Epic IST Team Get-together 2025">
+          <img src="/images/epicwin1.jpeg" alt="Epic Cricket Fiesta 2 Final Match" class="gallery-slide" data-label="Epic Cricket Fiesta 2 Final Match">
+          <img src="/images/epicwin2.jpeg" alt="Epic Cricket Fiesta 2 Champions" class="gallery-slide" data-label="Epic Cricket Fiesta 2 Champions">
+          <img src="/images/epicwin3.jpeg" alt="Epic Cricket Fiesta 2 Phoenix Team" class="gallery-slide" data-label="Epic Cricket Fiesta 2 Phoenix Team">
+          <img src="/images/epicwin4.jpeg" alt="Epic Cricket Fiesta 2 Winning Moment" class="gallery-slide" data-label="Epic Cricket Fiesta 2 Winning Moment">
+          <img src="/images/epicwin5.jpeg" alt="Epic Cricket Fiesta 2" class="gallery-slide" data-label="Epic Cricket Fiesta 2">
+          <img src="/images/sl_fi.jpeg" alt="End of The Chapter" class="gallery-slide" data-label="End of The Chapter">
+          <img src="/images/sl_get.jpeg" alt="CSNE Get-together" class="gallery-slide" data-label="CSNE Get-together">
+          <img src="/images/sl_leo.jpeg" alt="Leo club Meetup" class="gallery-slide" data-label="Leo club Meetup">
+          <img src="/images/sl_ppm.jpeg" alt="PPM Final Presentation" class="gallery-slide" data-label="PPM Final Presentation">
+          <img src="/images/sl_bmit.jpeg" alt="BMIT Presentation" class="gallery-slide" data-label="BMIT Presentation">
+          <img src="/images/sl_win1.jpeg" alt="SLIIT Bash Champions" class="gallery-slide" data-label="SLIIT Bash Champions">
+          <img src="/images/sl_win2.jpeg" alt="SLIIT Bash Champions" class="gallery-slide" data-label="SLIIT Bash Champions">
+          <!-- Add more gallery images here -->
+        </div>
+        <button class="carousel-button prev-button" aria-label="Previous image"><i class="fas fa-chevron-left"></i></button>
+        <button class="carousel-button next-button" aria-label="Next image"><i class="fas fa-chevron-right"></i></button>
+      </div>
+      <div class="gallery-label" id="gallery-label"></div> <!-- Label for current image -->
+      <div class="gallery-dots"></div>
+    </div>
+  </section>
+
+  <!-- Contact Section - How to Reach You -->
+  <section id="contact" class="contact-section reveal">
+    <div class="container">
+      <h2 class="section-title">Contact Me</h2>
+      <div class="contact-content">
+        <div class="contact-info">
+          <h3>Get in Touch</h3>
+          <p><i class="fas fa-envelope"></i> <span id="contact-email">tlakshan300@gmail.com</span> <button class="copy-btn" data-copy-target="contact-email" aria-label="Copy email"><i class="fas fa-copy"></i></button></p>
+          <p><i class="fas fa-phone"></i> <span id="contact-phone">+94 70 466 1700</span> <button class="copy-btn" data-copy-target="contact-phone" aria-label="Copy phone number"><i class="fas fa-copy"></i></button></p>
+          <p><i class="fas fa-map-marker-alt"></i> Malabe, Sri Lanka</p>
+          <div class="social-links">
+            <a href="https://www.linkedin.com/in/tharindu-lakshan-mn/" target="_blank" aria-label="LinkedIn profile"><i class="fab fa-linkedin-in"></i></a>
+            <a href="https://github.com/Tharindu-Lakshan-manathunga/" target="_blank" aria-label="GitHub profile"><i class="fab fa-github"></i></a>
+            <a href="https://www.instagram.com/__tharindu__lakshan_/profilecard/?igsh=MW04bjFmZ3JvaWl6bA==" target="_blank" aria-label="Instagram profile"><i class="fab fa-instagram"></i></a>
+            <a href="https://www.facebook.com/share/1HQKVdApr4/?mibextid=wwXIfr" target="_blank" aria-label="Facebook profile"><i class="fab fa-facebook-f"></i></a>
+          </div>
+        </div>
+        <div class="contact-form">
+          <h3>Send a Message</h3>
+          <!-- Formspree integration: Replace with your actual Formspree endpoint -->
+          <form id="contactForm" action="https://formspree.io/f/xpwrjobk" method="POST">
+            <input type="text" name="name" placeholder="Your Name" required>
+            <input type="email" name="email" placeholder="Your Email" required>
+            <input type="text" name="subject" placeholder="Subject">
+            <textarea name="message" rows="5" placeholder="Your Message" required></textarea>
+            <button type="submit" class="btn-primary" id="submit-form-btn">Send Message</button>
+            <div id="form-status-message" class="form-status"></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-links-grid">
+        <div class="footer-col">
+          <h4>Explore</h4>
+          <ul>
+            <li><a href="#about">About Me</a></li>
+            <li><a href="#projects">My Projects</a></li>
+            <li><a href="#experience">Experience Timeline</a></li>
+            <li><a href="#skills">My Skills</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Services</h4>
+          <ul>
+            <li><a href="#services">Cloud Infrastructure</a></li>
+            <li><a href="#services">CI/CD Automation</a></li>
+            <li><a href="#services">DevOps Consulting</a></li>
+            <li><a href="#services">System Security</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Connect</h4>
+          <ul>
+            <li><a href="#contact">Contact Form</a></li>
+            <li><a href="#contact">Email Me</a></li>
+            <li><a href="#contact">Call Me</a></li>
+            <li><a href="/images/my_cv.pdf">Download CV</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Follow Me</h4>
+          <div class="social-links-footer">
+            <a href="https://www.linkedin.com/in/tharindu-lakshan-mn/" target="_blank" aria-label="LinkedIn profile"><i class="fab fa-linkedin-in"></i></a>
+            <a href="https://github.com/Tharindu-Lakshan-manathunga/" target="_blank" aria-label="GitHub profile"><i class="fab fa-github"></i></a>
+            <a href="https://www.instagram.com/__tharindu__lakshan_/profilecard/?igsh=MW04bjFmZ3JvaWl6bA==" target="_blank" aria-label="Instagram profile"><i class="fab fa-instagram"></i></a>
+            <a href="https://www.facebook.com/share/1HQKVdApr4/?mibextid=wwXIfr" target="_blank" aria-label="Facebook profile"><i class="fab fa-facebook-f"></i></a>
+          </div>
+        </div>
+      </div>
+      <p class="copyright-text">&copy; <span id="current-year"></span> Tharindu Lakshan. All Rights Reserved. <span id="user-id-display" class="analytics-info"></span></p>
+      <p class="analytics-note"></p>
+    </div>
+  </footer>
+
+  <!-- Login/Signup Modal -->
+  <div id="auth-modal" class="auth-modal">
+    <div class="auth-modal-content">
+      <span class="auth-modal-close" aria-label="Close authentication modal">&times;</span>
+      <div class="auth-form-container">
+        <h2>Login / Signup</h2>
+        <form id="login-form" class="auth-form">
+          <input type="email" id="login-email" placeholder="Email" required>
+          <input type="password" id="login-password" placeholder="Password" required>
+          <button type="submit" class="btn-primary auth-submit-btn">Login</button>
+          <p class="auth-toggle-text">Don't have an account? <a href="#" id="show-signup">Sign up</a></p>
+          <div id="login-error-message" class="auth-error-message"></div>
+        </form>
+
+        <form id="signup-form" class="auth-form" style="display: none;">
+          <input type="email" id="signup-email" placeholder="Email" required>
+          <input type="password" id="signup-password" placeholder="Password (min 6 characters)" required>
+          <input type="password" id="signup-confirm-password" placeholder="Confirm Password" required>
+          <button type="submit" class="btn-primary auth-submit-btn">Sign Up</button>
+          <p class="auth-toggle-text">Already have an account? <a href="#" id="show-login">Login</a></p>
+          <div id="signup-error-message" class="auth-error-message"></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Chatbot Modal -->
+  <div class="chatbot-modal">
+    <div class="chatbot-header">
+      Tharindu Bot
+      <span class="modal-close" aria-label="Close chatbot">&times;</span>
+    </div>
+    <div class="chatbot-body">
+      <div class="chat-message bot-message">
+        Hi there! I'm Tharindu's automated assistant. How can I help you today?
+      </div>
+    </div>
+    <div class="chatbot-suggestions">
+      <button class="suggestion-btn" onclick="sendSuggestedMessage('Tell me about your experience')">Experience</button>
+      <button class="suggestion-btn" onclick="sendSuggestedMessage('What are your skills?')">Skills</button>
+      <button class="suggestion-btn" onclick="sendSuggestedMessage('Show me your projects')">Projects</button>
+      <button class="suggestion-btn" onclick="sendSuggestedMessage('How can I contact Tharindu?')">Contact</button>
+      <button class="suggestion-btn" onclick="sendSuggestedMessage('What services do you offer?')">Services</button>
+      <button class="suggestion-btn" onclick="sendSuggestedMessage('Tell me about your education')">Education</button>
+      <button class="suggestion-btn" onclick="sendSuggestedMessage('Can I get a copy of your CV?')">CV</button>
+      <button class="suggestion-btn" onclick="sendSuggestedMessage('Where can I see testimonials?')">Testimonials</button>
+      <button class="suggestion-btn" onclick="sendSuggestedMessage('Show me your achievements')">Achievements</button>
+      <button class="suggestion-btn" onclick="sendSuggestedMessage('Tell me about your final year project')">Final Year Project</button>
+    </div>
+    <div class="chatbot-footer">
+      <button id="clear-chat-btn" class="clear-chat-btn">Clear Chat</button>
+      <input type="text" id="chatbot-input" placeholder="Type your message...">
+      <button id="chatbot-send-btn">Send</button>
+    </div>
+  </div>
+
+  <!-- Chatbot Toggle Button -->
+  <button class="chatbot-toggle-btn" aria-label="Open chatbot">
+    <i class="fas fa-comment-dots"></i>
+  </button>
+
+  <!-- WhatsApp Floating Button -->
+  <a href="https://wa.me/94704661700" target="_blank" class="whatsapp-float-btn" aria-label="Connect on WhatsApp">
+    <i class="fab fa-whatsapp"></i>
+  </a>
+
+  <!-- Scroll-to-top button -->
+  <button id="scroll-to-top-btn" class="scroll-to-top-btn" aria-label="Scroll to top">
+    <i class="fas fa-arrow-up"></i>
+  </button>
+
+</body>
+</html>
