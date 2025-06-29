@@ -4,6 +4,7 @@
   ],
   "hints": {
     "disown-opener": "off"
+<<<<<<< HEAD
   },
   "browserslist": [
     "defaults",
@@ -13,4 +14,7 @@
     "not safari <= 18.5",
     "not samsung <= 27"
   ]
+=======
+  }
+>>>>>>> e1875ca21aa492b9760c53dac0fe6ebc225cc349
 }
